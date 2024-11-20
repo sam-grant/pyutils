@@ -5,20 +5,22 @@ import math
 import numpy as np
 import vector
 
-class EvtNtuple_util:
+class pyutil_import:
   """ class to help users import a trkana tree and branch """
-  def __init__(self, filename, treename="TrkAna", branchname="trkana", filelist=[]):
+  def __init__(self, filename, treename="EventNtuple", branchname="ntuple"):
     self.filename= filename
-    self.filelist= filelist
     self.treename = treename
     self.branchname = branchname
     self.Array = ak.Array
   
-  def ImportFileList(self, filepath, leafname):
+  def ImportFileList(self):
     """ import list of files """
-    for batch in uproot.iterate(files=filepath):
-      tree = batch[str(leafname)]
-      print(tree)
+    #TODO
+    return 0
+  
+  def ImportFileListFromSAM(self):
+    """ import list of files """
+    #TODO
     return 0
     
   def ImportTree(self):
@@ -41,6 +43,22 @@ class EvtNtuple_util:
       branches = tree.arrays(filter_name=list_names)
       return branches
       
+  def EvtCut(self):
+    #TODO
+    
+  def TrkCut(self):
+    #TODO
+  
+  def TrkSegCut(self):
+    #TODO
+    
+  def TrkCrvCoincsCut(self):
+    #TODO
+
+class pyutil_vector:
+  
+  # TODO vector functions (mag), track angle (into CRV)
+  
   def GetVectorXYZ(self, leafname, vectorreq, sid=0):
     """ 
     imports a XYZ vector branch e.g. mom and turns it into something which can use funcitons are found in:
@@ -67,7 +85,13 @@ class EvtNtuple_util:
     }, with_name="Vector3D")
     
     return trkvect3D
+
+class pyutil_print:
+  #TODO
   
+class pyutil_plots:
+
+  # TODO - styling, stats boxes
   def PlotValueHist(self, leafname, vectorreq, sid, low, hi, xaxis_label, scale='linear'):
     """ make basic plot of magnitude of leafname value at tracker ent, mid or ext (specify sid) """
     
@@ -120,4 +144,3 @@ class EvtNtuple_util:
     ax.grid(True)
     #ax.legend()
     plt.show()
-
