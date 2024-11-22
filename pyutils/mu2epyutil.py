@@ -420,9 +420,10 @@ class Plot:
   
   def PlotGraph(
       self, x_, y_, xerr_=None, yerr_=None,
-      xmin=None, xmax=None, ymin=None, ymax=None,
       title=None, xlabel=None, ylabel=None,
-      col='black', linestyle='None', fout='graph.png', show=True, NDPI=300
+      xmin=None, xmax=None, ymin=None, ymax=None,
+      col='black', linestyle='None', fout='graph.png',
+      log_x=False, log_y=False, show=True, NDPI=300
     ):
     ''' 
     Plot a scatter graph with error bars (if included)
@@ -439,6 +440,10 @@ class Plot:
         ax.set_xlim(left=xmin, right=xmax)
     if ymin is not None or ymax is not None:
         ax.set_ylim(bottom=ymin, top=ymax)
+    if log_x: 
+        ax.set_xscale("log")
+    if log_y: 
+        ax.set_yscale("log")
     # Set title, xlabel, and ylabel
     ax.set_title(title, fontsize=15, pad=10)
     ax.set_xlabel(xlabel, fontsize=13, labelpad=10) 
@@ -446,8 +451,68 @@ class Plot:
     # Set font size of tick labels on x and y axes
     ax.tick_params(axis='x', labelsize=13)  
     ax.tick_params(axis='y', labelsize=13)  
-    # Scientific notation
-    self.ScientificNotation(ax) 
+    # TODO: scientific notation for graphs
+    # self.ScientificNotation(ax) 
+    # Draw
+    plt.tight_layout()
+    plt.savefig(fout, dpi=NDPI, bbox_inches="tight")
+    if show:
+      plt.show()
+    print("\n---> Wrote:\n\t", fout)
+    # Clear memory
+    plt.close()
+    return
+  
+  def PlotGraphOverlay(
+      self, graphs_, xerr_=None, yerr_=None,
+      title=None, xlabel=None, ylabel=None,
+      xmin=None, xmax=None, ymin=None, ymax=None,
+      leg_pos='best', include_black=False, linestyle='None', fout='graph.png',
+      log_x=False, log_y=False, show=True, NDPI=300
+    ):
+    ''' 
+      Overlay many scatter graphs
+    ''' 
+    # Create figure and axes
+    fig, ax = plt.subplots()
+    # Loop through graphs and plot
+    for i, (label, graph_) in enumerate(graphs_.items()):
+      # Just to be explicit
+      x_ = graph_[0]
+      y_ = graph_[1]
+      xerr_ = graph_[2]
+      yerr_ = graph_[3]
+      # Error bars
+      if xerr_ is None: # If only using yerr
+        xerr_ = [0] * len(x_) 
+      if yerr_ is None: # If only using xerr 
+        yerr_ = [0] * len(y_) 
+      # Colour
+      col = self.col_[i+1]
+      if include_black: 
+        col = self.col_[i]
+      # Plot
+      ax.errorbar(x_, y_, xerr=xerr_, yerr=yerr_, fmt='o', color=col, label=label, markersize=4, ecolor=col, capsize=2, elinewidth=1, linestyle=linestyle, linewidth=1)
+    # Set axis limits
+    if xmin is not None or xmax is not None:
+        ax.set_xlim(left=xmin, right=xmax)
+    if ymin is not None or ymax is not None:
+        ax.set_ylim(bottom=ymin, top=ymax)
+    if log_x: 
+        ax.set_xscale("log")
+    if log_y: 
+        ax.set_yscale("log")
+    # Set title, xlabel, and ylabel
+    ax.set_title(title, fontsize=15, pad=10)
+    ax.set_xlabel(xlabel, fontsize=13, labelpad=10) 
+    ax.set_ylabel(ylabel, fontsize=13, labelpad=10) 
+    # Set font size of tick labels on x and y axes
+    ax.tick_params(axis='x', labelsize=13)  
+    ax.tick_params(axis='y', labelsize=13)  
+    # TODO: scientific notation for graphs
+    # self.ScientificNotation(ax) 
+    # Legend
+    ax.legend(loc=leg_pos, frameon=False, fontsize=13)
     # Draw
     plt.tight_layout()
     plt.savefig(fout, dpi=NDPI, bbox_inches="tight")
