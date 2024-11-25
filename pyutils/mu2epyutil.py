@@ -97,11 +97,11 @@ class Vector:
 
 class Print:
   def __init__(self):
-    ''' Placeholder init '''
+    """  Placeholder init """ 
     pass  
 
   def PrintEvent(self, event, prefix=''):
-    ''' Print this event in human readable form '''
+    """ Print this event in human readable form """ 
     for field in event.fields: # Loop through array elements in the event
       value = event[field] # Get the value
       full_field = f'{prefix}{field}' # Set full field using prefix provided in function call
@@ -112,7 +112,7 @@ class Print:
     return
 
   def PrintNEvents(self, array_, n=1):
-    ''' Print n events human readable form '''
+    """  Print n events human readable form """ 
     print(f"\n---> Printing {n} event(s)...\n")
     for i, event in enumerate(array_, start=1): # Iterate event-by-event 
       print(f'-------------------------------------------------------------------------------------')
@@ -123,7 +123,7 @@ class Print:
                  
 class Plot:
   def __init__(self):
-    ''' Placeholder init '''
+    """  Placeholder init """ 
     pass  
     
   def PlotValueHist(self, leafname, vectorreq, sid, low, hi, xaxis_label, scale='linear'):
@@ -178,7 +178,7 @@ class Plot:
     #ax.legend()
     plt.show()
 
-  ''' 
+  """  
    Generic plotting utils below:
    * Formatting
    * Statitics
@@ -187,7 +187,7 @@ class Plot:
    * 2D histogram (includes weighting)
    * Graph with errors
    * Graph with errors overlay
-  '''
+  """ 
 
   # Colours
   col_ = [
@@ -205,9 +205,9 @@ class Plot:
   ]
 
   def RoundToSigFig(self, val, sf):
-    ''' 
+    """  
       Round a value to a specified number of significant figures 
-    ''' 
+    """  
     if val == 0 or math.isnan(val): # Edge cases
       return val
     else:
@@ -219,9 +219,9 @@ class Plot:
       return round(val * scale) / scale
 
   def GetStats(self, array_, xmin, xmax): 
-    ''' 
+    """  
       Stats for 1D histograms
-    '''
+    """ 
     array_ = ak.to_numpy(array_) # Convert to numpy array
     n_entries = len(array_) # Number of entries
     mean = np.mean(array_) # Mean
@@ -233,10 +233,10 @@ class Plot:
     return n_entries, mean, mean_err, std_dev, std_dev_err, underflows, overflows
 
   def ScientificNotation(self, ax, cbar=None):
-    ''' 
+    """  
       Set scientific notation on axes
       Condition: log scale is not used and the absolute limit is >= 1e4 or <= 1e-4 
-    '''
+    """ 
     # Access the max values of the axes
     xmax, ymax = ax.get_xlim()[1], ax.get_ylim()[1]
     if ax.get_xscale() != 'log' and (abs(xmax) >= 1e4 or abs(xmax) <= 1e-4): # x-axis 
@@ -318,10 +318,10 @@ class Plot:
     title=None, xlabel=None, ylabel=None, fout='hist.png', leg_pos='best', NDPI=300,
     log_x=False, log_y=False, include_black=False, show=False
   ):
-    '''
+    """ 
       Overlay many 1D histograms from a dictionary of flat arrays 
       hists_ = { label_0 : array_0, ..., label_n : array_n }
-    ''' 
+    """  
     # Create figure and axes
     fig, ax = plt.subplots()
     # Iterate over the hists and plot each one
@@ -361,9 +361,9 @@ class Plot:
       title=None, xlabel=None, ylabel=None, zlabel=None, fout='hist.png', cmap='inferno', NDPI=300, 
       log_x=False, log_y=False, log_z=False, cb=True, show=True
   ):
-    ''' 
+    """  
       Plot a 2D histogram from two flat arrays of the same length 
-    '''
+    """ 
     # Convert to numpy
     x_ = ak.to_numpy(x_)
     y_ = ak.to_numpy(y_)
@@ -425,9 +425,9 @@ class Plot:
       col='black', linestyle='None', fout='graph.png',
       log_x=False, log_y=False, show=True, NDPI=300
     ):
-    ''' 
+    """  
     Plot a scatter graph with error bars (if included)
-    ''' 
+    """  
     # Create figure and axes
     fig, ax = plt.subplots()
     if xerr_ is None: # If only using yerr
@@ -470,9 +470,9 @@ class Plot:
       leg_pos='best', include_black=False, linestyle='None', fout='graph.png',
       log_x=False, log_y=False, show=True, NDPI=300
     ):
-    ''' 
+    """  
       Overlay many scatter graphs
-    ''' 
+    """  
     # Create figure and axes
     fig, ax = plt.subplots()
     # Loop through graphs and plot
