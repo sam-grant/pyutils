@@ -4,6 +4,19 @@
 
 pyutils aims to provide a user friendly interface between EventNtuple and python. We aim to use packages available in the standard mu2e python environment and provide functionality that will be common to many Mu2e analysis groups.
 
+## Analysis Environment
+
+The Analysis python Environment is maintained by the L4 for Analysis Environment (currently Sam Grant).
+
+To activate the environment:
+
+```
+source /cvmfs/mu2e.opensciencegrid.org/env/ana/current/bin/activate
+```
+
+If a package you require is not present, please contact Sam.
+
+
 ## General Functionality
 
 The mu2epyutils script currently contains several key classes.
