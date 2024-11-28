@@ -66,6 +66,10 @@ class Import:
     values = branch[str(treename)].mask[(mask_min) & (mask_max) & trk_mask ]
     return values
     
+  def ApplyTrkCutList(self, branch, treenames, leafs, minvs, maxvs, surface_id=0)
+    """ apply a list of cuts at trk level """
+    pass
+    
   def TrkCrvCoincsCut(self, trk, crv, tmin, tmax):
     """ simple function to remove anything close to a crv coinc """
     pass
