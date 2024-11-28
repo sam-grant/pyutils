@@ -1,12 +1,16 @@
+#! /usr/bin/env python
 import uproot
 import awkward as ak
 
 class Import:
   """ class to help users import a trkana tree and branch """
-  def __init__(self, filename, dirname="EventNtuple", treename="ntuple"):
+  def __init__(self, filename, dirname="EventNtuple", treename="ntuple", filelist=False):
     self.filename= filename
     self.dirname = dirname
     self.treename = treename
+    self.filelist = None
+    if self.filelist == True:
+      self.filelist = self.filename
     self.Array = ak.Array
   
   def ImportFileList(self, path): 
@@ -14,6 +18,7 @@ class Import:
     with open(path, "r") as file_list_: # Open file
       lines_ = file_list_.readlines() # Read file
       lines_ = [line.strip() for line in lines_]  # Remove leading/trailing whitespace
+    print(lines_)
     return lines_ # Return lines as a list
 
   def ImportFileListFromSAM(self):
@@ -33,7 +38,6 @@ class Import:
     self.Array = input_tree.arrays(library='ak')
     return self.Array
 
-
   def ImportBranches(self, tree, branchnames):
     """ import list of branches from trkana"""
     list_names = []
@@ -49,19 +53,16 @@ class Import:
     values = branch.mask[(trk_mask)]
     return values
     
-  def EvtCut(self):
-    #TODO
-    pass
+  def SingleCut(self, branch, treename, leaf, minv, maxv):
+    """ apply a single cut as a mask on the chosen branch leaf """
+    print(branch[str(treename)][str(leaf)])
+    mask_max = (branch[str(treename)][str(leaf)]< maxv)
+    mask_min = (branch[str(treename)][str(leaf)]> minv)
+    values = branch.mask[(mask_min) & (mask_max) ]
+    print(values)
+    return values
     
-  def TrkCut(self):
-    #TODO
-    pass
-  
-  def TrkSegCut(self):
-    #TODO
-    pass
-    
-  def TrkCrvCoincsCut(self):
-    #TODO
+  def TrkCrvCoincsCut(self, trk, crv, tmin, tmax):
+    """ simple function to remove anythin close to a crv coinc """
     pass
 

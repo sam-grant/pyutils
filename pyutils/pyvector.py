@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 import uproot
 import awkward as ak
 import math

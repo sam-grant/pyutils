@@ -1,4 +1,4 @@
-
+#! /usr/bin/env python
 class Print:
   def __init__(self):
     """  Placeholder init """ 

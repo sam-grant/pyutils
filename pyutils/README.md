@@ -57,6 +57,14 @@ trkent = test_evn.SelectSurfaceID(branch, treename, surface_id)
 
 Here the user is asking for the trk fit (trksegs) as measured at the front of the tracker.
 
+### Importing multiple files
+
+If you are working with a list of files, write the list to a text file and use:
+
+```
+test_evn.ImportFileList(fullpath/filename.list)
+```
+
 ### Plots/style
 
 We hope to provide standard plotting functions with a specific style to make presentaions and papers more professional. We encourage users to use one of the standard style options for their plots. The current style file is: mu2e.mplstyle. It is imported in pyplotter.py automatically (called in the init of that class).

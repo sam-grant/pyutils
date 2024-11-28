@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 import awkward as ak
 import matplotlib.pyplot as plt
 import math
@@ -6,8 +7,6 @@ import vector
 from scipy import stats
 from matplotlib.ticker import ScalarFormatter
 import matplotlib.colors as colors
-
-
 
 class Plot:
   def __init__(self):
