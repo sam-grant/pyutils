@@ -1,7 +1,7 @@
 # mu2e.mplstyle
 
 # Generic figure tweaks 
-axes.prop_cycle: cycler("color", ["#5790fc", "#f89c20", "#e42536", "#964a8b", "#9c9ca1", "#7a21dd"])
+axes.prop_cycle: cycler("color", ['red','blue','green','orange','violet','cyan','pink','gray','yellow'])
 
 mathtext.default: regular
 font.size: 18

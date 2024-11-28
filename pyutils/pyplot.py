@@ -67,25 +67,10 @@ class Plot:
           cbar.ax.yaxis.offsetText.set_fontsize(13)  # ''
     return
 
-  # Colours
-  col_ = [
-      (0., 0., 0.),                                                   # Black
-      (0.8392156862745098, 0.15294117647058825, 0.1568627450980392),  # Red
-      (0.12156862745098039, 0.4666666666666667, 0.7058823529411765),  # Blue
-      (0.17254901960784313, 0.6274509803921569, 0.17254901960784313), # Green
-      (1.0, 0.4980392156862745, 0.054901960784313725),                # Orange
-      (0.5803921568627451, 0.403921568627451, 0.7411764705882353),    # Purple
-      (0.09019607843137255, 0.7450980392156863, 0.8117647058823529),  # Cyan
-      (0.8901960784313725, 0.4666666666666667, 0.7607843137254902),   # Pink
-      (0.5490196078431373, 0.33725490196078434, 0.29411764705882354), # Brown
-      (0.4980392156862745, 0.4980392156862745, 0.4980392156862745),   # Gray 
-      (0.7372549019607844, 0.7411764705882353, 0.13333333333333333)   # Yellow
-  ]
-
   def Plot1D( self, array_, weights_=None, nbins=100, xmin=-1.0, xmax=1.0, 
     title=None, xlabel=None, ylabel=None, col='black', leg_pos='best', fout='hist.png', NDPI=300,
     stats=True, log_x=False, log_y=False, under_over=False, stat_errors=False, error_bars=False, show=True): 
-    """ Plot a 1D histogram from a flat array """ #TODO - documentation
+    """ Plot a 1D histogram from a flat array """
     
     # Create figure and axes
     fig, ax = plt.subplots()
@@ -157,7 +142,7 @@ class Plot:
     plt.close()
     return
     
-  def Plot1DOverlay( self, hists_dict_, nbins=100, xmin=-1.0, xmax=1.0, title=None, xlabel=None, ylabel=None, fout='hist.png', leg_pos='best', NDPI=300, log_x=False, log_y=False, include_black=False, show=False):
+  def Plot1DOverlay( self, hists_dict_, nbins=100, xmin=-1.0, xmax=1.0, title=None, xlabel=None, ylabel=None, fout='hist.png', leg_pos='best', NDPI=300, log_x=False, log_y=False, show=False):
     """ 
       Overlay many 1D histograms from a dictionary of flat arrays 
       hists_ = { label_0 : array_0, ..., label_n : array_n }
@@ -168,9 +153,7 @@ class Plot:
     
     # Iterate over the hists and plot each one
     for i, (label, hist) in enumerate(hists_dict_.items()):
-      if not include_black:
-        col = self.col_[i+1]
-      ax.hist(hist, bins=nbins, range=(xmin, xmax), histtype='step', edgecolor=col, fill=False, density=False, color=col, label=label)
+      ax.hist(hist, bins=nbins, range=(xmin, xmax), histtype='step', fill=False, density=False, label=label)
       
     # Log scale 
     if log_x: 
@@ -319,7 +302,7 @@ class Plot:
       self, graphs_, xerr_=None, yerr_=None,
       title=None, xlabel=None, ylabel=None,
       xmin=None, xmax=None, ymin=None, ymax=None,
-      leg_pos='best', include_black=False, linestyle='None', fout='graph.png',
+      leg_pos='best', linestyle='None', fout='graph.png',
       log_x=False, log_y=False, show=True, NDPI=300
     ):
     """  
@@ -339,12 +322,9 @@ class Plot:
         xerr_ = [0] * len(x_) 
       if yerr_ is None: # If only using xerr 
         yerr_ = [0] * len(y_) 
-      # Colour
-      col = self.col_[i+1]
-      if include_black: 
-        col = self.col_[i]
+
       # Plot
-      ax.errorbar(x_, y_, xerr=xerr_, yerr=yerr_, fmt='o', color=col, label=label, markersize=4, ecolor=col, capsize=2, elinewidth=1, linestyle=linestyle, linewidth=1)
+      ax.errorbar(x_, y_, xerr=xerr_, yerr=yerr_, fmt='o',  label=label, markersize=4, capsize=2, elinewidth=1, linestyle=linestyle, linewidth=1)
     # Set axis limits
     if xmin is not None or xmax is not None:
         ax.set_xlim(left=xmin, right=xmax)

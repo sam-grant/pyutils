@@ -42,10 +42,10 @@ def main():
   trkentmc = test_evn.SelectSurfaceID(branchmc, treenamemc, surface_id)
   flatarraymc = ak.flatten(trkent[str(treenamemc),str(vecbranchname)], axis=None)
   dictarrays = { "true" : flatarraymc, "reco" : flatarraymom }
-  myhist.Plot1DOverlay(dictarrays, 100, 95,115, "example", "fit mom at Trk Ent [MeV/c]", "#events per bin", 'overlay.pdf', 'best', 300,False, True, False, True)
+  myhist.Plot1DOverlay(dictarrays, 100, 95,115, "example", "fit mom at Trk Ent [MeV/c]", "#events per bin", 'overlay.pdf', 'best', 300,False, True, True)
 
   # 2D mom time plot
-  myhist.Plot2D( flatarraymom, flatarraytime, None, 100, 95, 115, 100, 450, 1650, "example", "fit mom at Trk Ent [MeV/c]", "fit mom at Trk Ent [MeV/c]", None, 'timevmom.pdf', 'inferno',300,False, False, False, True,True)
+  myhist.Plot2D( flatarraymom, flatarraytime, None, 100, 95, 115, 100, 450, 1650, "example", "fit mom at Trk Ent [MeV/c]", "fit time at Trk Ent [ns]", None, 'timevmom.pdf', 'inferno',300,False, False, False, True,True)
         
   # printing
   myprint = prnt.Print()
