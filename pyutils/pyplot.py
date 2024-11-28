@@ -11,13 +11,13 @@ import matplotlib.colors as colors
 
 class Plot:
   def __init__(self):
-    """  Placeholder init """ 
+    """  Placeholder init """
+    plt.style.use('mu2e.mplstyle')
     pass  
     
   def PlotValueHist(self, values, treename, branchname, low, hi, xaxis_label, scale='linear'):
     """ make basic plot of magnitude of leafname value at tracker ent, mid or ext (specify sid) """
 
-    
     fig, ax = plt.subplots(1,1)
     n, bins, patches = ax.hist(ak.flatten(values[str(treename),str(branchname)], axis=None), bins=100, range=(int(low), int(hi)), histtype='step',color='r', label=str(branchname))
 
@@ -35,11 +35,11 @@ class Plot:
     ax.legend()
     plt.show()
     
-  def PlotMagValueHist(self, vect, sid, low, hi, xaxis_label, scale='log'):
+  def PlotMagValueHist(self, vect, low, hi, xaxis_label, scale='log'):
     """ make basic plot of magnitude of leafname value at tracker ent, mid or ext (specify sid) """
     
     fig, ax = plt.subplots(1,1)
-    n, bins, patches = ax.hist(ak.flatten(vect.mag, axis=None), bins=100, range=(int(low), int(hi)), histtype='step',color='r')
+    n, bins, patches = ax.hist(ak.flatten(vect, axis=None), bins=100, range=(int(low), int(hi)), histtype='step',color='r')
 
     bin_centers = 0.5 * (bins[:-1] + bins[1:])
     yerrs = []
