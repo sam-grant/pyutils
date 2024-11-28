@@ -46,23 +46,27 @@ class Import:
     branches = tree.arrays(filter_name=list_names, library='ak')
     return branches
       
-  def SelectSurfaceID(self, branch, treename, sid):
-    """ allows user to see trk fits only on chosen surface"""
-    # take the chosen position to evaluate
+  def SelectSurfaceIDAll(self, branch, treename, sid=0):
+    """ allows user to see trk fits only on chosen surface but retains all elements """
     trk_mask = (branch[str(treename)]['sid']==sid)
     values = branch.mask[(trk_mask)]
     return values
     
-  def SingleCut(self, branch, treename, leaf, minv, maxv):
+  def SelectSurfaceID(self, branch, treename, sid=0):
+    """ allows user to see trk fits only on chosen surface chooses a specified element """
+    trk_mask = (branch[str(treename)]['sid']==sid)
+    values = branch[str(treename)].mask[(trk_mask)]
+    return values
+    
+  def SingleTrkCut(self, branch, treename, leaf, minv, maxv, surface_id=0):
     """ apply a single cut as a mask on the chosen branch leaf """
-    print(branch[str(treename)][str(leaf)])
     mask_max = (branch[str(treename)][str(leaf)]< maxv)
     mask_min = (branch[str(treename)][str(leaf)]> minv)
-    values = branch.mask[(mask_min) & (mask_max) ]
-    print(values)
+    trk_mask = (branch[str(treename)]['sid']==0)
+    values = branch[str(treename)].mask[(mask_min) & (mask_max) & trk_mask ]
     return values
     
   def TrkCrvCoincsCut(self, trk, crv, tmin, tmax):
-    """ simple function to remove anythin close to a crv coinc """
+    """ simple function to remove anything close to a crv coinc """
     pass
 
