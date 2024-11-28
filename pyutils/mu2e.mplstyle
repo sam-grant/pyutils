@@ -4,16 +4,21 @@
 axes.prop_cycle: cycler("color", ["#5790fc", "#f89c20", "#e42536", "#964a8b", "#9c9ca1", "#7a21dd"])
 
 mathtext.default: regular
-figure.figsize: (8.0 8.0)
 font.size: 18
 axes.labelsize: medium
 axes.unicode_minus: False
+axes.labelpad: 10
+axes.titlesize: 15
+axes.linewidth: 2
+grid.alpha: 0.8
+grid.linestyle: :
+lines.linestlye: 0
+savefig.transparent: False
+
+xaxis.labellocation: right
+yaxis.labellocation: top
 xtick.labelsize: small
 ytick.labelsize: small
-legend.fontsize: small
-legend.handlelength: 1.5
-legend.borderpad: 0.5
-legend.frameon: False
 xtick.direction: in
 xtick.major.size: 12
 xtick.minor.size: 6
@@ -33,9 +38,9 @@ ytick.major.right: True
 ytick.minor.left: True
 ytick.minor.right: True
 ytick.minor.visible: True
-grid.alpha: 0.8
-grid.linestyle: :
-axes.linewidth: 2
-savefig.transparent: False
-xaxis.labellocation: right
-yaxis.labellocation: top
+
+legend.fontsize: small
+legend.handlelength: 1.5
+legend.borderpad: 0.5
+legend.frameon: False
+    

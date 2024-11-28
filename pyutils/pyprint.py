@@ -1,4 +1,3 @@
-import mu2epyutil
 
 class Print:
   def __init__(self):

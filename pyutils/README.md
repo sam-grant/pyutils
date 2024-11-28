@@ -21,28 +21,79 @@ If a package you require is not present, please contact Sam.
 
 The mu2epyutils script currently contains several key classes.
 
+### Usage
+
+To use the mu2e pyutils:
+
+```
+import pyimport as evn
+import pyvector as vec
+import pyplot as plot
+import pyprint as prnt
+```
+
 ### Imports
 
-Imports the ntuple and places the contents into awkward array ready for analysis.
+Imports the ntuple and places the contents into awkward array ready for analysis. To import an EventNtuple made using v6:
 
-A few functions to make applying standard signal selection cuts easier are under development.
+```
+mytuple = evn.Import("file.root", "EventNtuple", "ntuple")
 
+```
+To accsess a given tree:
+
+```
+treename = 'trksegs'
+ntuple = test_evn.ImportTree()
+branch = test_evn.ImportBranches(ntuple,[str(treename)])
+```
+
+We also provide function to access a given surface ID:
+
+```
+surface_id = 0 # tracker entrance
+trkent = test_evn.SelectSurfaceID(branch, treename, surface_id)
+```
+
+Here the user is asking for the trk fit (trksegs) as measured at the front of the tracker.
 
 ### Plots/style
 
-We hope to provide standard plotting functions with a specific style to make presentaions and papers more professional. We encourage users to use one of the standard style options for their plots.
+We hope to provide standard plotting functions with a specific style to make presentaions and papers more professional. We encourage users to use one of the standard style options for their plots. The current style file is: mu2e.mplstyle. It is imported in pyplotter.py automatically (called in the init of that class).
 
-We also encourage suggestions and enhancements here.
+If you wish to use this style in your own scripts:
+
+```
+plt.style.use('mu2e.mplstyle')
+```
+
+To use the plotter functions, create a pyplot object:
+
+```
+myhist = plot.Plot()
+```
+
 
 ### Vectors
 
 EventNtuple when imported into python does not retain the vector operations (mag, angle etc.). We are left with simply x,y,z coordinates for momentum or positions. The Vector class acts to restore vector operations in a pure python environment.
 
-## MC utils
+To use the vector functionality:
+
+```
+myvect = vec.Vector()
+vecbranchname = 'mom'
+vector_test = myvect.GetVectorXYZ(trkent, treename, vecbranchname)
+magnitude = myvect.Mag(vector_test)
+print("list of mom mags: ", magnitude)
+
+# make 1D plot of magnitudes
+myhist.PlotMagValueHist(magnitude, 95, 115, "fit mom at Trk Ent [MeV/c]","log")
+```
+
+## MC util
 
 Development underway by Leo Borrel (contact for update).
-
-The MC utils provide an interface for anyone wanting to know the true nature of a given track and link us back to the process origin of the track.
 
 ## Development
 

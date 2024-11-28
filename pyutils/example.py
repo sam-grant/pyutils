@@ -1,7 +1,8 @@
 import pyimport as evn
 import pyvector as vec
 import pyplot as plot
-
+import pyprint as prnt
+import awkward as ak
 def main():
   """ simple test function to run some of the utils """
   
@@ -21,7 +22,8 @@ def main():
 
   # make 1D plot
   myhist = plot.Plot()
-  myhist.PlotValueHist(trkent, treename, branchname,  450, 1650, "fit time at Trk Ent [ns]", 'linear')
+  flatarraytime = ak.flatten(trkent[str(treename),str(branchname)], axis=None)
+  myhist.Plot1D(flatarraytime, None, 100, 450, 1650, "example", "fit time at Trk Ent [ns]", "#events per bin", 'black', 'best', 'time.pdf', 300, True, False, False, False, True, True, True)
   
   # access vectors
   myvect = vec.Vector()
@@ -31,7 +33,22 @@ def main():
   print("list of mom mags: ", magnitude)
   
   # make 1D plot of magnitudes
-  myhist.PlotMagValueHist(magnitude, 95, 115, "fit mom at Trk Ent [MeV/c]","log")
+  flatarraymom = ak.flatten(magnitude, axis=None)
+  myhist.Plot1D(flatarraymom  , None, 100, 100,115, "example", "fit mom at Trk Ent [MeV/c]", "#events per bin", 'black', 'best', 'time.pdf', 300, True, False, True, False, True, True, True)
+  
+  # plot example overlays (mc truth .v. reco)
+  treenamemc = 'trksegsmc'
+  branchmc = test_evn.ImportBranches(ntuple,[str(treenamemc)])
+  trkentmc = test_evn.SelectSurfaceID(branchmc, treenamemc, surface_id)
+  flatarraymc = ak.flatten(trkent[str(treenamemc),str(vecbranchname)], axis=None)
+  dictarrays = { "true" : flatarraymc, "reco" : flatarraymom }
+  myhist.Plot1DOverlay(dictarrays, 100, 95,115, "example", "fit mom at Trk Ent [MeV/c]", "#events per bin", 'overlay.pdf', 'best', 300,False, True, False, True)
+
+  # 2D mom time plot
+  myhist.Plot2D( flatarraymom, flatarraytime, None, 100, 95, 115, 100, 450, 1650, "example", "fit mom at Trk Ent [MeV/c]", "fit mom at Trk Ent [MeV/c]", None, 'timevmom.pdf', 'inferno',300,False, False, False, True,True)
+        
+  # printing
+  myprint = prnt.Print()
   
   #import a list of files
   #test_evn.ImportFileList(filepath)

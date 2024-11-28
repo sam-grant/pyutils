@@ -1,4 +1,3 @@
-import uproot
 import awkward as ak
 import matplotlib.pyplot as plt
 import math
@@ -9,78 +8,13 @@ from matplotlib.ticker import ScalarFormatter
 import matplotlib.colors as colors
 
 
+
 class Plot:
   def __init__(self):
     """  Placeholder init """
     plt.style.use('mu2e.mplstyle')
     pass  
     
-  def PlotValueHist(self, values, treename, branchname, low, hi, xaxis_label, scale='linear'):
-    """ make basic plot of magnitude of leafname value at tracker ent, mid or ext (specify sid) """
-
-    fig, ax = plt.subplots(1,1)
-    n, bins, patches = ax.hist(ak.flatten(values[str(treename),str(branchname)], axis=None), bins=100, range=(int(low), int(hi)), histtype='step',color='r', label=str(branchname))
-
-    bin_centers = 0.5 * (bins[:-1] + bins[1:])
-    yerrs = []
-    for i, j in enumerate(n):
-      yerrs.append(math.sqrt(j))
-    plt.errorbar(bin_centers, n, yerr=np.sqrt(n), fmt='r.')
-
-    # add in style features:
-    ax.set_yscale(str(scale))
-    ax.set_xlabel(str(xaxis_label))
-    ax.set_ylabel('# events per bin')
-    ax.grid(True)
-    ax.legend()
-    plt.show()
-    
-  def PlotMagValueHist(self, vect, low, hi, xaxis_label, scale='log'):
-    """ make basic plot of magnitude of leafname value at tracker ent, mid or ext (specify sid) """
-    
-    fig, ax = plt.subplots(1,1)
-    n, bins, patches = ax.hist(ak.flatten(vect, axis=None), bins=100, range=(int(low), int(hi)), histtype='step',color='r')
-
-    bin_centers = 0.5 * (bins[:-1] + bins[1:])
-    yerrs = []
-    for i, j in enumerate(n):
-      yerrs.append(math.sqrt(j))
-    plt.errorbar(bin_centers, n, yerr=np.sqrt(n), fmt='r.')
-
-    # add in style features:
-    ax.set_yscale(str(scale))
-    ax.set_xlabel(str(xaxis_label))
-    ax.set_ylabel('# events per bin')
-    ax.grid(True)
-    #ax.legend()
-    plt.show()
-
-  """  
-   Generic plotting utils below:
-   * Formatting
-   * Statitics
-   * 1D histogram (includes weighting)
-   * 1D histogram overlay hist
-   * 2D histogram (includes weighting)
-   * Graph with errors
-   * Graph with errors overlay
-  """ 
-
-  # Colours
-  col_ = [
-      (0., 0., 0.),                                                   # Black
-      (0.8392156862745098, 0.15294117647058825, 0.1568627450980392),  # Red
-      (0.12156862745098039, 0.4666666666666667, 0.7058823529411765),  # Blue
-      (0.17254901960784313, 0.6274509803921569, 0.17254901960784313), # Green
-      (1.0, 0.4980392156862745, 0.054901960784313725),                # Orange
-      (0.5803921568627451, 0.403921568627451, 0.7411764705882353),    # Purple
-      (0.09019607843137255, 0.7450980392156863, 0.8117647058823529),  # Cyan
-      (0.8901960784313725, 0.4666666666666667, 0.7607843137254902),   # Pink
-      (0.5490196078431373, 0.33725490196078434, 0.29411764705882354), # Brown
-      (0.4980392156862745, 0.4980392156862745, 0.4980392156862745),   # Gray 
-      (0.7372549019607844, 0.7411764705882353, 0.13333333333333333)   # Yellow
-  ]
-
   def RoundToSigFig(self, val, sf):
     """  
       Round a value to a specified number of significant figures 
@@ -109,7 +43,7 @@ class Plot:
     overflows = len(array_[array_ > xmax]) # Number of overflows
     return n_entries, mean, mean_err, std_dev, std_dev_err, underflows, overflows
 
-  def ScientificNotation(self, ax, cbar=None):
+  def ScientificNotation(self, ax, cbar=None): #FIXME - we might want to make the extreme ranges bigger
     """  
       Set scientific notation on axes
       Condition: log scale is not used and the absolute limit is >= 1e4 or <= 1e-4 
@@ -133,18 +67,34 @@ class Plot:
           cbar.ax.yaxis.offsetText.set_fontsize(13)  # ''
     return
 
-  def Plot1D(
-    self, array_, weights_=None, nbins=100, xmin=-1.0, xmax=1.0, 
+  # Colours
+  col_ = [
+      (0., 0., 0.),                                                   # Black
+      (0.8392156862745098, 0.15294117647058825, 0.1568627450980392),  # Red
+      (0.12156862745098039, 0.4666666666666667, 0.7058823529411765),  # Blue
+      (0.17254901960784313, 0.6274509803921569, 0.17254901960784313), # Green
+      (1.0, 0.4980392156862745, 0.054901960784313725),                # Orange
+      (0.5803921568627451, 0.403921568627451, 0.7411764705882353),    # Purple
+      (0.09019607843137255, 0.7450980392156863, 0.8117647058823529),  # Cyan
+      (0.8901960784313725, 0.4666666666666667, 0.7607843137254902),   # Pink
+      (0.5490196078431373, 0.33725490196078434, 0.29411764705882354), # Brown
+      (0.4980392156862745, 0.4980392156862745, 0.4980392156862745),   # Gray 
+      (0.7372549019607844, 0.7411764705882353, 0.13333333333333333)   # Yellow
+  ]
+
+  def Plot1D( self, array_, weights_=None, nbins=100, xmin=-1.0, xmax=1.0, 
     title=None, xlabel=None, ylabel=None, col='black', leg_pos='best', fout='hist.png', NDPI=300,
-    stats=True, log_x=False, log_y=False, under_over=False, stat_errors=False, error_bars=False, show=True
-  ): 
-    """ Plot a 1D histogram from a flat array """
+    stats=True, log_x=False, log_y=False, under_over=False, stat_errors=False, error_bars=False, show=True): 
+    """ Plot a 1D histogram from a flat array """ #TODO - documentation
+    
     # Create figure and axes
     fig, ax = plt.subplots()
+    
     # Create the histogram 
-    counts_, bin_edges_, _ = ax.hist(array_, bins=int(nbins), range=(xmin, xmax), histtype='step', edgecolor=col, linewidth=1.0, fill=False, density=False, weights=weights_)
+    counts_, bin_edges_, _ = ax.hist(array_, bins=int(nbins), range=(xmin, xmax), histtype='step', edgecolor=col,  fill=False, density=False, weights=weights_)
     bin_centres_ = (bin_edges_[:-1] + bin_edges_[1:]) / 2
     bin_errors_ = 0 * len(bin_centres_)
+    
     # Calculate errors
     if weights_ is None:
         bin_errors_ = np.sqrt(counts_)  # Poisson errors for unweighted data
@@ -152,81 +102,99 @@ class Plot:
         # Weighted errors: sqrt(sum(weights^2)) for each bin
         weights_squared_, _ = np.histogram(array_, bins=int(nbins), range=(xmin, xmax), weights=np.square(weights_))
         bin_errors_ = np.sqrt(weights_squared_)
+        
     # Plot the histogram 
     if error_bars:
-        ax.errorbar(bin_centres_, counts_, yerr=bin_errors_, linestyle='None', linewidth=1.0, ecolor=col, color=col, markersize=4, capsize=2, elinewidth=1)
+        ax.errorbar(bin_centres_, counts_, yerr=bin_errors_, ecolor=col, fmt='.', color=col, capsize=2, elinewidth=1)
     else:
-        ax.hist(array_, bins=int(nbins), range=(xmin, xmax), histtype='step', edgecolor=col, linewidth=1.0, fill=False, density=False, weights=weights_)
+        ax.hist(array_, bins=int(nbins), range=(xmin, xmax), histtype='step', edgecolor=col, fill=False, density=False, weights=weights_)
+        
     # Set x-axis limits
     ax.set_xlim(xmin, xmax)
+    
     # Log scale 
-    if log_x: ax.set_xscale('log')
-    if log_y: ax.set_yscale('log')
+    if log_x: 
+      ax.set_xscale('log')
+    if log_y: 
+      ax.set_yscale('log')
+      
     # Statistics
     N, mean, mean_err, std_dev, std_dev_err, underflows, overflows = self.GetStats(array_, xmin, xmax)
+    
     # Create legend text (roughly imitating the ROOT statbox)
     leg_txt = f'Entries: {N}\nMean: {self.RoundToSigFig(mean, 3)}\nStd Dev: {self.RoundToSigFig(std_dev, 3)}'
-    if stat_errors: leg_txt = f'Entries: {N}\nMean: {self.RoundToSigFig(mean, 3)}' + rf'$\pm$' + f'{self.RoundToSigFig(mean_err, 1)}\nStd Dev: {self.RoundToSigFig(std_dev, 3)}' rf'$\pm$' + f'{self.RoundToSigFig(std_dev_err, 1)}'
-    if under_over: leg_txt += f'\nUnderflows: {underflows}\nOverflows: {overflows}'
+    
+    # stats box
+    if stat_errors: 
+      leg_txt = f'Entries: {N}\nMean: {self.RoundToSigFig(mean, 3)}' + rf'$\pm$' + f'{self.RoundToSigFig(mean_err, 1)}\nStd Dev: {self.RoundToSigFig(std_dev, 3)}' rf'$\pm$' + f'{self.RoundToSigFig(std_dev_err, 1)}'
+    if under_over: 
+      leg_txt += f'\nUnderflows: {underflows}\nOverflows: {overflows}'
+    
     # Add legend to the plot
-    if stats: ax.legend([leg_txt], loc=leg_pos, frameon=False, fontsize=13)
+    if stats: 
+      ax.legend([leg_txt], loc=leg_pos)
+    
     # Formatting 
-    ax.set_title(title, fontsize=15, pad=10)
-    ax.set_xlabel(xlabel, fontsize=13, labelpad=10) 
-    ax.set_ylabel(ylabel, fontsize=13, labelpad=10) 
-    # Set font size of tick labels on x and y axes
-    ax.tick_params(axis='x', labelsize=13)  # Set x-axis tick label font size
-    ax.tick_params(axis='y', labelsize=13)  # Set y-axis tick label font size
+    ax.set_title(title)
+    ax.set_xlabel(xlabel) 
+    ax.set_ylabel(ylabel) 
+
     # Scientific notation 
     self.ScientificNotation(ax)
+    
     # Draw
     plt.tight_layout()
     plt.savefig(fout, dpi=NDPI, bbox_inches='tight')
-    if show: # Show
+    
+    # Show (for interactive use)
+    if show: 
       plt.show()
+      
     # Save 
     print('\n---> Wrote:\n\t', fout)
+    
     # Clear memory
     plt.close()
     return
     
-  def Plot1DOverlay(
-    self, hists_dict_, nbins=100, xmin=-1.0, xmax=1.0,
-    title=None, xlabel=None, ylabel=None, fout='hist.png', leg_pos='best', NDPI=300,
-    log_x=False, log_y=False, include_black=False, show=False
-  ):
+  def Plot1DOverlay( self, hists_dict_, nbins=100, xmin=-1.0, xmax=1.0, title=None, xlabel=None, ylabel=None, fout='hist.png', leg_pos='best', NDPI=300, log_x=False, log_y=False, include_black=False, show=False):
     """ 
       Overlay many 1D histograms from a dictionary of flat arrays 
       hists_ = { label_0 : array_0, ..., label_n : array_n }
-    """  
+    """
+    
     # Create figure and axes
     fig, ax = plt.subplots()
+    
     # Iterate over the hists and plot each one
     for i, (label, hist) in enumerate(hists_dict_.items()):
       if not include_black:
         col = self.col_[i+1]
-      ax.hist(hist, bins=nbins, range=(xmin, xmax), histtype='step', edgecolor=col, linewidth=1.0, fill=False, density=False, color=col, label=label)
+      ax.hist(hist, bins=nbins, range=(xmin, xmax), histtype='step', edgecolor=col, fill=False, density=False, color=col, label=label)
+      
     # Log scale 
     if log_x: 
       ax.set_xscale('log')
     if log_y: 
       ax.set_yscale('log') 
+      
     # Set x-axis limits
     ax.set_xlim(xmin, xmax)
-    ax.set_title(title, fontsize=15, pad=10)
-    ax.set_xlabel(xlabel, fontsize=13, labelpad=10) 
-    ax.set_ylabel(ylabel, fontsize=13, labelpad=10) 
-    # Set font size of tick labels on x and y axes
-    ax.tick_params(axis='x', labelsize=13)  # Set x-axis tick label font size
-    ax.tick_params(axis='y', labelsize=13)  # Set y-axis tick label font size
+    ax.set_title(title)
+    ax.set_xlabel(xlabel) 
+    ax.set_ylabel(ylabel) 
+    
     # Scientific notation
     self.ScientificNotation(ax)
     # Add legend to the plot
-    ax.legend(loc=leg_pos, frameon=False, fontsize=12)
+    ax.legend(loc=leg_pos)
+    
     # Draw
     plt.tight_layout()
     plt.savefig(fout, dpi=NDPI, bbox_inches='tight')
-    if show: # Show
+    
+    # Show
+    if show:
       plt.show()
     # Clear memory
     plt.close()
@@ -241,13 +209,16 @@ class Plot:
     """  
       Plot a 2D histogram from two flat arrays of the same length 
     """ 
+    
     # Convert to numpy
     x_ = ak.to_numpy(x_)
     y_ = ak.to_numpy(y_)
+    
     # Filter out empty entries
     valid_indices_ = [i for i in range(len(x_)) if np.any(x_[i]) and np.any(y_[i])]
     x_ = [x_[i] for i in valid_indices_]
     y_ = [y_[i] for i in valid_indices_]
+    
     if weights_ is not None:
       weights_ = [weights_[i] for i in valid_indices_]
     # Check if the input arrays are not empty and have the same length
@@ -255,12 +226,16 @@ class Plot:
         raise ValueError("Input arrays are empty.")
     if len(x_) != len(y_):
         raise ValueError("Input arrays are of different length.")
+        
     # Create 2D histogram
     hist, _, _ = np.histogram2d(x_, y_, bins=[int(nbins_x), int(nbins_y)], range=[[xmin, xmax], [ymin, ymax]], weights=weights_)
+    
     # Set up the plot
     fig, ax = plt.subplots()
+    
     # Setup normalisation
     norm = colors.Normalize(vmin=np.min(hist), vmax=np.max(hist))  
+    
     # Log scale
     if log_x: 
       ax.set_xscale('log')
@@ -268,6 +243,7 @@ class Plot:
       ax.set_yscale('log') 
     if log_z:
         norm = colors.LogNorm(vmin=1, vmax=np.max(hist)) 
+        
     # Plot the 2D histogram
     im = ax.imshow(hist.T, cmap=cmap, extent=[xmin, xmax, ymin, ymax], aspect='auto', origin='lower', norm=norm) 
     # Add colourbar and format it
@@ -275,14 +251,13 @@ class Plot:
     if cb: 
      cbar = plt.colorbar(im)
      cbar.ax.tick_params(labelsize=13)  # Adjust font size  
-     cbar.set_label(zlabel, fontsize=13, labelpad=10)
+     cbar.set_label(zlabel)
+     
     # Format titles
-    plt.title(title, fontsize=15, pad=10)
-    plt.xlabel(xlabel, fontsize=13, labelpad=10)
-    plt.ylabel(ylabel, fontsize=13, labelpad=10)
-    # Set tick label font size
-    ax.tick_params(axis='x', labelsize=13)  
-    ax.tick_params(axis='y', labelsize=13) 
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    
     # Scientific notation
     self.ScientificNotation(ax, cbar)
     # Draw 
