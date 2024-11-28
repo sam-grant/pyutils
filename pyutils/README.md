@@ -73,6 +73,51 @@ To use the plotter functions, create a pyplot object:
 myhist = plot.Plot()
 ```
 
+The plot class allows standard histograms in 1D and 2D with optional error bars as well as graphs. Several examples are shown in example.py.
+
+The arguments are somewhat details, here is a list of definitions:
+
+Plot1D (with defaults)
+* weights_=None: to scale a histogram
+* nbins=100: number of bins
+* xmin=-1.0:  xmax=1.0:  x axis range
+* title=None:  title of plot
+* xlabel=None:  x axis label
+* ylabel=None:  y axis label
+* col='black':  colour choice
+* leg_pos='best':  legend position
+* fout='hist.png':  file name to save to
+* NDPI=300: 
+* stats=True:  plot the stats box
+* log_x=False:  log scale in x
+* log_y=False:  log scale in y
+* under_over=False:  add under/over flow to stats box
+* stat_errors=False:  add stat errors to stat box
+* error_bars=False:  draw error bars
+* show=True: show plot interactively
+
+Plot2D (with defaults):
+
+* weights_=None
+* nbins_x=100:  number of bins in x
+* xmin=-1.0:  x axis range
+* xmax=1.0:  x axis range
+* nbins_y=100:  number of bins in y
+* ymin=-1.0:  y axis range
+* ymax=1.0: y axis range
+* title=None: title of plot
+* xlabel=None:  x axis label
+* ylabel=None:  y axis label
+* zlabel=None:  z axis label
+* fout='hist.png': file name to save to
+* cmap='inferno':  for weight axis
+* NDPI=300:  
+* log_x=False: log scale in x
+* log_y=False: log scale in y
+* log_z=False:  log scale in z
+* cb=True: add colour bar
+* show=True: show plot interactively
+
 
 ### Vectors
 
@@ -88,7 +133,8 @@ magnitude = myvect.Mag(vector_test)
 print("list of mom mags: ", magnitude)
 
 # make 1D plot of magnitudes
-myhist.PlotMagValueHist(magnitude, 95, 115, "fit mom at Trk Ent [MeV/c]","log")
+flatarraymom = ak.flatten(magnitude, axis=None)
+myhist.Plot1D(flatarraymom  , None, 100, 100,115, "example", "fit mom at Trk Ent [MeV/c]", "#events per bin", 'black', 'best', 'time.pdf', 300, True, False, True, False, True, True, True)
 ```
 
 ## MC util
