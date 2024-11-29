@@ -4,22 +4,22 @@ import awkward as ak
 
 class Import:
   """ class to help users import a trkana tree and branch """
-  def __init__(self, filename, dirname="EventNtuple", treename="ntuple", filelist=False):
+  def __init__(self, filename=None, dirname="EventNtuple", treename="ntuple", filelist=False):
     self.filename= filename
     self.dirname = dirname
     self.treename = treename
-    self.filelist = None
-    if self.filelist == True:
-      self.filelist = self.filename
     self.Array = ak.Array
-  
-  def ImportFileList(self, path): 
-    """ Import list of files from a text file """
+    
+  def ImportTreeFromFileList(self, path, branchname): 
+    """ Import list of files from a text file and merge a specific branch"""
     with open(path, "r") as file_list_: # Open file
-      lines_ = file_list_.readlines() # Read file
-      lines_ = [line.strip() for line in lines_]  # Remove leading/trailing whitespace
-    print(lines_)
-    return lines_ # Return lines as a list
+      filelist = file_list_.readlines() # Read file
+      # Remove leading/trailing whitespace
+      filelist = [line.strip() for line in filelist]
+    print("file list", filelist)
+    # Concatenate the TTrees named "mytree" from each file
+    merged_tree = uproot.concatenate([f"{file}:"+str(self.dirname)+"/"+str(self.treename)+"/"+str(branchname) for file in filelist])
+    return merged_tree
 
   def ImportFileListFromSAM(self):
     """ import list of files """
@@ -47,13 +47,13 @@ class Import:
     return branches
       
   def SelectSurfaceIDAll(self, branch, treename, sid=0):
-    """ allows user to see trk fits only on chosen surface but retains all elements """
+    """ allows user to see trk fits only on chosen surface but retains all branch """
     trk_mask = (branch[str(treename)]['sid']==sid)
     values = branch.mask[(trk_mask)]
     return values
     
   def SelectSurfaceID(self, branch, treename, sid=0):
-    """ allows user to see trk fits only on chosen surface chooses a specified element """
+    """ allows user to see trk fits only on chosen surface chooses a specified branch """
     trk_mask = (branch[str(treename)]['sid']==sid)
     values = branch[str(treename)].mask[(trk_mask)]
     return values
@@ -66,7 +66,7 @@ class Import:
     values = branch[str(treename)].mask[(mask_min) & (mask_max) & trk_mask ]
     return values
     
-  def ApplyTrkCutList(self, branch, treenames, leafs, minvs, maxvs, surface_id=0)
+  def ApplyTrkCutList(self, branch, treenames, leafs, minvs, maxvs, surface_id=0):
     """ apply a list of cuts at trk level """
     pass
     
