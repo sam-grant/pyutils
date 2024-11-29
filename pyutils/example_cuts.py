@@ -19,18 +19,20 @@ def main():
 
   # apply a simple cut
   treenames = ['trksegs','trksegpars_lh','trksegpars_lh']
-  branch = test_evn.ImportBranches(ntuple,treenames)
+  branch = test_evn.ImportBranches(ntuple,['trksegs','trksegpars_lh'])
   branchnames = ['time','t0err','maxr']
   minvals = [700,0,450]
   maxvals = [1650,0.9,680]
   cutarray = test_evn.MultiTrkCut(branch, treenames, branchnames, minvals, maxvals, surface_id)
   flatarraycut = ak.flatten(cutarray[str(treename)][str(branchname)], axis=None)
+  print("cut flat array", flatarraycut)
   
   # make 1D plot
   trkent = test_evn.SelectSurfaceID(branch, treename, surface_id)
-  print(trkent)
+  
   myhist = plot.Plot()
   flatarraytime = ak.flatten(trkent[str(branchname)], axis=None)
+  print("uncut", flatarraytime)
   
   dictarrays = { "no cut" : flatarraytime, "with cut" : flatarraycut }
   myhist.Plot1DOverlay(dictarrays, 100, 450, 1695, "Mu2e Example", "fit time at Trk Ent [ns]", "#events per bin", 'timecut.pdf', 'best', 300,False, True, True)

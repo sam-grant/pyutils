@@ -47,8 +47,9 @@ treename = 'trksegs'
 ntuple = test_evn.ImportTree()
 branch = test_evn.ImportBranches(ntuple,[str(treename)])
 ```
+### Select
 
-We also provide function to access a given surface ID:
+The pyselect class contains useful selection examples. For acample provide function to access a given surface ID:
 
 ```
 surface_id = 0 # tracker entrance

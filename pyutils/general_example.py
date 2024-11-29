@@ -2,6 +2,7 @@ import pyimport as evn
 import pyvector as vec
 import pyplot as plot
 import pyprint as prnt
+import pyselect as slct
 import awkward as ak
 def main():
   """ simple test function to run some of the utils """
@@ -17,7 +18,8 @@ def main():
   branch = test_evn.ImportBranches(ntuple,[str(treename)])
   
   # find fit at chosen ID
-  trkent = test_evn.SelectSurfaceID(branch, treename, surface_id)
+  mysel = slct.Select()
+  trkent = mysel.SelectSurfaceID(branch, treename, surface_id)
   
   # make 1D plot
   myhist = plot.Plot()
@@ -25,7 +27,7 @@ def main():
   myhist.Plot1D(flatarraytime, None, 100, 450, 1695, "Mu2e Example", "fit time at Trk Ent [ns]", "#events per bin", 'black', 'best', 'time.pdf', 300, True, False, False, False, True, True, True)
   
   # apply a simple cut
-  cutarray = test_evn.SingleTrkCut(branch, treename, branchname, 700, 1650)
+  cutarray = mysel.SingleTrkCut(branch, treename, branchname, 700, 1650)
   flatarraycut = ak.flatten(cutarray[str(branchname)], axis=None)
   dictarrays = { "no cut" : flatarraytime, "with cut" : flatarraycut }
   myhist.Plot1DOverlay(dictarrays, 100, 450, 1695, "Mu2e Example", "fit time at Trk Ent [ns]", "#events per bin", 'timecut.pdf', 'best', 300,False, True, True)
@@ -33,7 +35,7 @@ def main():
   # access vectors
   myvect = vec.Vector()
   vecbranchname = 'mom'
-  trkentall = test_evn.SelectSurfaceIDAll(branch, treename, surface_id)
+  trkentall = mysel.SelectSurfaceIDAll(branch, treename, surface_id)
   vector_test = myvect.GetVectorXYZ(trkentall, treename, vecbranchname)
   magnitude = myvect.Mag(vector_test)
   print("list of mom mags: ", magnitude)
@@ -41,14 +43,6 @@ def main():
   # make 1D plot of magnitudes
   flatarraymom = ak.flatten(magnitude, axis=None)
   myhist.Plot1D(flatarraymom  , None, 100, 100, 115, "Mu2e Example", "fit mom at Trk Ent [MeV/c]", "#events per bin", 'black', 'best', 'time.pdf', 300, True, False, True, False, True, True, True)
-
-  # plot example overlays (mc truth .v. reco)
-  treenamemc = 'trksegsmc'
-  branchmc = test_evn.ImportBranches(ntuple,[str(treenamemc)])
-  trkentmc = test_evn.SelectSurfaceID(branchmc, treenamemc, surface_id)
-  flatarraymc = ak.flatten(trkent[str(treenamemc),str(vecbranchname)], axis=None)
-  dictarrays = { "true" : flatarraymc, "reco" : flatarraymom }
-  myhist.Plot1DOverlay(dictarrays, 100, 95,115, "Mu2e Example", "fit mom at Trk Ent [MeV/c]", "#events per bin", 'momMCComp.pdf', 'best', 300,False, True, True)
 
   # 2D mom time plot
   myhist.Plot2D( flatarraymom, flatarraytime, None, 100, 95, 115, 100, 450, 1650, "Mu2e Example", "fit mom at Trk Ent [MeV/c]", "fit time at Trk Ent [ns]", None, 'timevmom.pdf', 'inferno',300,False, False, False, True,True)
