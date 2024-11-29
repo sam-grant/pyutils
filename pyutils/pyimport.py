@@ -4,7 +4,7 @@ import awkward as ak
 
 class Import:
   """ class to help users import a trkana tree and branch """
-  def __init__(self, filename=None, dirname="EventNtuple", treename="ntuple", filelist=False):
+  def __init__(self, filename, dirname="EventNtuple", treename="ntuple"):
     self.filename= filename
     self.dirname = dirname
     self.treename = treename
@@ -18,8 +18,8 @@ class Import:
       filelist = [line.strip() for line in filelist]
     print("file list", filelist)
     # Concatenate the TTrees named "mytree" from each file
-    merged_tree = uproot.concatenate([f"{file}:"+str(self.dirname)+"/"+str(self.treename)+"/"+str(branchname) for file in filelist])
-    return merged_tree
+    merged = uproot.concatenate([f"{file}:"+str(self.dirname)+"/"+str(self.treename)+"/"+str(branchname) for file in filelist])
+    return merged
 
   def ImportFileListFromSAM(self):
     """ import list of files """
@@ -66,9 +66,20 @@ class Import:
     values = branch[str(treename)].mask[(mask_min) & (mask_max) & trk_mask ]
     return values
     
-  def ApplyTrkCutList(self, branch, treenames, leafs, minvs, maxvs, surface_id=0):
+  def MultiTrkCut(self, branch, treenames, leaves, minvs, maxvs, surface_id=0):
     """ apply a list of cuts at trk level """
-    pass
+    mask_list = ""
+    #for i, tree in enumerate(treenames): 
+    i = 0
+    tree= treenames[i]
+    print(i, tree, leaves[i], minvs[i], maxvs[i])
+    trk_mask = (branch[str(tree)]['sid']==0)
+    mask_list+=str(trk_mask)
+    mask_max = (branch[str(tree)][str(leaves[i])]< maxvs[i])
+    mask_min = (branch[str(tree)][str(leaves[i])]> minvs[i])
+    mask_list+=str(mask_min)+" & "+str(mask_max)+" & "
+    values = branch[str(tree)].mask[ (mask_min) & (mask_max) & trk_mask  ] #
+    return values
     
   def TrkCrvCoincsCut(self, trk, crv, tmin, tmax):
     """ simple function to remove anything close to a crv coinc """
