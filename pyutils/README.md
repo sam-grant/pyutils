@@ -23,7 +23,7 @@ The mu2epyutils script currently contains several key classes.
 
 ### Usage
 
-To use the mu2e pyutils:
+To use the mu2e pyutils import as you would any other file:
 
 ```
 import pyimport as evn
@@ -57,6 +57,18 @@ trkent = test_evn.SelectSurfaceID(branch, treename, surface_id)
 ```
 
 Here the user is asking for the trk fit (trksegs) as measured at the front of the tracker.
+
+A number of other helper functions are provided to help those doing a typical trk/evt based analysis:
+
+* is elec = asks if particle trk fit assumes electron
+* is pos = same but for positron
+* is down = asks if track is downstream going
+* SurfaceIDSelect = selects track fit at chosen surface ID (sid=0 is trk entrance)
+* hasTrkCRVCoin = checks a track to see if it is within a defined time from a crv coincidence
+
+Most select functions return a mask. This can be applied to the data using the .mask function. Detailed examples are provded in the example_cuts.py script.
+
+NOTE: currently underdevelopment by S. Middleton
 
 ### Importing multiple files
 
@@ -127,6 +139,17 @@ Plot2D (with defaults):
 * cb=True: add colour bar
 * show=True: show plot interactively
 
+### Printing/Debugging
+
+A print function is provided in pyprint. To use:
+
+```
+  # print out the first 10 event trk seg information:
+  ntuple = test_evn.ImportTree()
+  trksegs = test_evn.ImportBranches(ntuple,['trksegs','trksegpars_lh','trkhits'])
+  myprnt = prnt.Print()
+  myprnt.PrintNEvents(trksegs,10)
+```
 
 ### Vectors
 

@@ -42,15 +42,11 @@ def main():
   
   # make 1D plot of magnitudes
   flatarraymom = ak.flatten(magnitude, axis=None)
-  myhist.Plot1D(flatarraymom  , None, 100, 100, 115, "Mu2e Example", "fit mom at Trk Ent [MeV/c]", "#events per bin", 'black', 'best', 'time.pdf', 300, True, False, True, False, True, True, True)
+  myhist.Plot1D(flatarraymom  , None, 100, 100, 115, "Mu2e Example", "fit mom at Trk Ent [MeV/c]", "#events per bin", 'black', 'best', 'mom.pdf', 300, True, False, True, False, True, True, True)
 
   # 2D mom time plot
   myhist.Plot2D( flatarraymom, flatarraytime, None, 100, 95, 115, 100, 450, 1650, "Mu2e Example", "fit mom at Trk Ent [MeV/c]", "fit time at Trk Ent [ns]", None, 'timevmom.pdf', 'inferno',300,False, False, False, True,True)
         
-  # printing
-  #myprint = prnt.Print() TODO
-  
-  
   
 if __name__ == "__main__":
     main()

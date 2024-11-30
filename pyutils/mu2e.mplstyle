@@ -12,7 +12,6 @@ axes.titlesize: 15
 axes.linewidth: 2
 grid.alpha: 0.8
 grid.linestyle: :
-lines.linestlye: 0
 savefig.transparent: False
 
 xaxis.labellocation: right

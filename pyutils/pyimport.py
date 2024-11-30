@@ -8,7 +8,6 @@ class Import:
     self.filename= filename
     self.dirname = dirname
     self.treename = treename
-    self.Array = ak.Array
     
   def ImportTreeFromFileList(self, path, branchname): 
     """ Import list of files from a text file and merge a specific branch"""
@@ -32,12 +31,6 @@ class Import:
     input_tree = input_file[self.dirname][self.treename]
     return input_tree
     
-  def MakeAwkArray(self):
-    """ import root tree and save it as an Awkward array """
-    input_tree = self.ImportTree()
-    self.Array = input_tree.arrays(library='ak')
-    return self.Array
-
   def ImportBranches(self, tree, branchnames):
     """ import list of branches from trkana"""
     list_names = []
@@ -45,5 +38,3 @@ class Import:
         list_names.append("/"+str(branchname)+"/")
     branches = tree.arrays(filter_name=list_names, library='ak')
     return branches
-
-
