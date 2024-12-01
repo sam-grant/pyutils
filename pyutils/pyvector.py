@@ -20,7 +20,7 @@ class Vector:
     # register the vector class
     vector.register_awkward()
 
-    # make the Vector 3D TODO - protect against str(leafname)  doesnt exist error
+    # make the Vector 3D
     trkvect3D = ak.zip({
         "x": branch[str(vectorname)]["fCoordinates"]["fX"],
         "y": branch[str(vectorname)]["fCoordinates"]["fY"],

@@ -26,24 +26,16 @@ def main():
   flatarraytime = ak.flatten(trkent[str(branchname)], axis=None)
   myhist.Plot1D(flatarraytime, None, 100, 450, 1695, "Mu2e Example", "fit time at Trk Ent [ns]", "#events per bin", 'black', 'best', 'time.pdf', 300, True, False, False, False, True, True, True)
   
-  # apply a simple cut
-  cutarray = mysel.SingleTrkCut(branch, treename, branchname, 700, 1650)
-  flatarraycut = ak.flatten(cutarray[str(branchname)], axis=None)
-  dictarrays = { "no cut" : flatarraytime, "with cut" : flatarraycut }
-  myhist.Plot1DOverlay(dictarrays, 100, 450, 1695, "Mu2e Example", "fit time at Trk Ent [ns]", "#events per bin", 'timecut.pdf', 'best', 300,False, True, True)
-  
   # access vectors
   myvect = vec.Vector()
   vecbranchname = 'mom'
   trkentall = mysel.SelectSurfaceID(branch, treename, surface_id)
   vector_test = myvect.GetVectorXYZFromLeaf(trkentall, vecbranchname)
   magnitude = myvect.Mag(vector_test)
-  print("list of mom mags: ", magnitude)
-  
+
   # make 1D plot of magnitudes
   flatarraymom = ak.flatten(magnitude, axis=None)
-  myhist.Plot1D(flatarraymom  , None, 100, 95, 115, "Mu2e Example", "fit mom at Trk Ent [MeV/c]", "#events per bin", 'black', 'best', 'mom.pdf', 300, True, False, True, False, True, True, True)
-
+  
   # 2D mom time plot
   myhist.Plot2D( flatarraymom, flatarraytime, None, 100, 95, 115, 100, 450, 1650, "Mu2e Example", "fit mom at Trk Ent [MeV/c]", "fit time at Trk Ent [ns]", None, 'timevmom.pdf', 'inferno',300,False, False, False, True,True)
         

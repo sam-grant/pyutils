@@ -32,6 +32,19 @@ class Select:
     """ checks if track is down stream going """
     trk_mask = (trksegs['trksegs']['mom']["fCoordinates"]["fZ"]>0)
     return trk_mask
+  
+  def SelectSurfaceID(self, branch, treename, sid=0):
+    """ allows user to see trk fits only on chosen surface chooses a specified branch """
+    trk_mask = (branch[str(treename)]['sid']==sid)
+    values = branch[str(treename)].mask[(trk_mask)]
+    return values
+  
+  def SelectTrkQual(self, tree, value):
+    """ select trks of this quality """
+    trkqual = tree["trkqual"] 
+    mytrkqual = trkqual.arrays(library='ak')
+    mask = (mytrkqual['trkqual.result'] > value)
+    return mask
     
   def hasTrkCrvCoincs(self, trks, crvs, tmax): #FIXME this is not working!
     """ simple function to remove anything close to a crv coinc """
@@ -40,41 +53,32 @@ class Select:
         for i_trk, trk in enumerate(evt):
             if ak.num(ak.drop_none(trk), axis = 0) > 0:
                 for i_crv, crv in enumerate(crvs['crvcoincs.time'][ i_evt]):
-                    #print(i_evt, i_trk, i_crv, "trk inside", trk)
+
                     if np.abs(trk[0] - crv) < tmax: #FIXME - is [0] OK?
                         has_coin[i_evt] = False
     return has_coin
-    
-  def SelectSurfaceIDAll(self, branch, treename, sid=0):
-    """ allows user to see trk fits only on chosen surface but retains all branch (trksegs trksegsmc) """
-    trk_mask = (branch[str(treename)]['sid']==sid)
-    values = branch.mask[(trk_mask)]
-    return values
-    
-  def SelectSurfaceID(self, branch, treename, sid=0):
-    """ allows user to see trk fits only on chosen surface chooses a specified branch """
-    trk_mask = (branch[str(treename)]['sid']==sid)
-    values = branch[str(treename)].mask[(trk_mask)]
-    return values
-    
-  def SingleTrkCut(self, branch, treename, leaf, minv, maxv, surface_id=0):
-    """ apply a single cut as a mask on the chosen branch leaf """
-    mask_max = (branch[str(treename)][str(leaf)]< maxv)
-    mask_min = (branch[str(treename)][str(leaf)]> minv)
-    trk_mask = (branch[str(treename)]['sid']==0) #FIXME return just the mask
-    values = branch[str(treename)].mask[(mask_min) & (mask_max) & trk_mask ]
-    return values
- 
-  def MultiTrkCut(self, branch, treenames, leaves, minvs, maxvs):
-    """ apply a list of cuts at trk level """ # FIXME
-    mask_list = ""
-    for i, tree in enumerate(treenames):
-      print(i, tree, leaves[i], minvs[i], maxvs[i])
-      print(branch[str(tree)])
-      mask_max = (branch[str(tree)][str(leaves[i])]< maxvs[i])
-      mask_min = (branch[str(tree)][str(leaves[i])]> minvs[i])
-      mask_list.append(mask_max)
-      mask_list.append(mask_min)
-    return mask_list # returns just the mask
-    
 
+  def MakeMask(self, branch, treename, leaf, eql, v1, v2=None):
+    """ makes a mask for the chosen branch/leaf v1 = min, v2 = max, use eql if you want it == v1"""
+    mask=""
+    if eql == True:
+      mask = (branch[str(treename)][str(leaf)]==v1)
+    else:
+      mask = (branch[str(treename)][str(leaf)] >  v1) & (branch[str(treename)][str(leaf)] < v2)
+    return mask
+  
+  def MakeMaskList(self, branch, treenames, leaves, eqs, v1s, v2s):
+    """ makes a mask for the chosen branch/leaf v1 = min, v2 = max, use eql if you want it == v1"""
+    mask_list=[]
+    print(treenames,leaves,eqs,v1s,v2s)
+    for i, tree in enumerate(treenames):
+      print(treenames[i],leaves[i],eqs[i],v1s[i],v2s[i])
+      mask = ""
+      if eqs[i] == True:
+        mask = (branch[str(treenames[i])][str(leaves[i])] == v1s[i])
+        print(i, mask)
+      else:
+        mask = (branch[str(treenames[i])][str(leaves[i])] >  v1s[i]) & (branch[str(treenames[i])][str(leaves[i])] < v2s[i])
+        print(i, mask)
+      mask_list.append(mask)
+    return mask_list
