@@ -25,7 +25,7 @@ class Select:
   
   def isPos(self, branch):
     """ checks if trk is  e+ """
-    trk_mask = (branch['trk']['pdg']==-11)
+    trk_mask = (branch['trk.pdg']==-11)
     return trk_mask
     
   def isDown(self, trksegs):
@@ -33,14 +33,14 @@ class Select:
     trk_mask = (trksegs['trksegs']['mom']["fCoordinates"]["fZ"]>0)
     return trk_mask
     
-  def hasTrkCrvCoincs(self, trks, crvs, tmax): #FIXME we need only trker times
+  def hasTrkCrvCoincs(self, trks, crvs, tmax): #FIXME this is not working!
     """ simple function to remove anything close to a crv coinc """
     has_coin = np.ones(ak.num(trks, axis=0), dtype=bool)
     for i_evt, evt in enumerate(trks['trksegs']['time']):
         for i_trk, trk in enumerate(evt):
             if ak.num(ak.drop_none(trk), axis = 0) > 0:
                 for i_crv, crv in enumerate(crvs['crvcoincs.time'][ i_evt]):
-                    print(i_evt, i_trk, i_crv, "trk inside", trk)
+                    #print(i_evt, i_trk, i_crv, "trk inside", trk)
                     if np.abs(trk[0] - crv) < tmax: #FIXME - is [0] OK?
                         has_coin[i_evt] = False
     return has_coin

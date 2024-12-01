@@ -35,14 +35,14 @@ def main():
   # access vectors
   myvect = vec.Vector()
   vecbranchname = 'mom'
-  trkentall = mysel.SelectSurfaceIDAll(branch, treename, surface_id)
-  vector_test = myvect.GetVectorXYZ(trkentall, treename, vecbranchname)
+  trkentall = mysel.SelectSurfaceID(branch, treename, surface_id)
+  vector_test = myvect.GetVectorXYZFromLeaf(trkentall, vecbranchname)
   magnitude = myvect.Mag(vector_test)
   print("list of mom mags: ", magnitude)
   
   # make 1D plot of magnitudes
   flatarraymom = ak.flatten(magnitude, axis=None)
-  myhist.Plot1D(flatarraymom  , None, 100, 100, 115, "Mu2e Example", "fit mom at Trk Ent [MeV/c]", "#events per bin", 'black', 'best', 'mom.pdf', 300, True, False, True, False, True, True, True)
+  myhist.Plot1D(flatarraymom  , None, 100, 95, 115, "Mu2e Example", "fit mom at Trk Ent [MeV/c]", "#events per bin", 'black', 'best', 'mom.pdf', 300, True, False, True, False, True, True, True)
 
   # 2D mom time plot
   myhist.Plot2D( flatarraymom, flatarraytime, None, 100, 95, 115, 100, 450, 1650, "Mu2e Example", "fit mom at Trk Ent [MeV/c]", "fit time at Trk Ent [ns]", None, 'timevmom.pdf', 'inferno',300,False, False, False, True,True)
