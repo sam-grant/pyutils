@@ -22,6 +22,10 @@ def main():
   mysel = slct.Select()
   trkent = mysel.SelectSurfaceID(branch, treename, surface_id)
   
+  # print out the first 10 events:
+  myprnt = prnt.Print()
+  myprnt.PrintNEvents(branch,10)
+  
   # make 1D plot
   myhist = plot.Plot()
   flatarraytime = ak.flatten(trkent[str(branchname)], axis=None)
