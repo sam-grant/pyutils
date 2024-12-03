@@ -194,4 +194,4 @@ These can be ran from anywhere within the working dir (note you will need the st
 
 ## Development
 
-Reach out to Andy, Sophie or Sam Grant (L4 Analysis Environment) if you want to contribute.
+Reach out via Slack (#analysis-tools or #analysis-tools-devel) if you want to contribute.
