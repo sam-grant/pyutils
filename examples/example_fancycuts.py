@@ -4,7 +4,7 @@ import pyvector as vec
 import pyplot as plot
 import pyprint as prnt
 from pyselect import Select as slct
-
+from pyselect import Event as evt
 import awkward as ak
 def main():
   """ simple test function to run some of the utils """
@@ -14,47 +14,45 @@ def main():
 
   # import code and extract branch
   ntuple = myevn.ImportTree()
-
+  
   # make a pyselect object
   mysel = slct()
   
-  # check if it is an electron
-  is_elec = mysel.isElectron(nutple)
-
+  # check if fit is for an elec
+  trks = ntuple["trk"] 
+  mytrks = trks.arrays(library='ak')
+ 
   # import branches associated with trk fits
-  trksegs = myevn.ImportBranches(ntuple,['trksegs','trksegpars_lh'])
+  trksegs = myevn.ImportBranches(ntuple,['trksegs','trksegpars_lh','trkhits'])
   
-  # check if fit is going down stream
-  is_down = mysel.isDownstream(trksegs)
-
-  # is trk entrance
-  trkent_mask = (trksegs['trksegs']['sid']==0)
-  
-  # is in time
-  trksegs_mask = (trksegs['trksegs']['time'] > 640) & (trksegs['trksegs']['time'] < 1650)
-  
-  # check trk pars
-  trkpars_mask = (trksegs['trksegpars_lh']['t0err'] < 0.9) & (trksegs['trksegpars_lh']['maxr'] < 680) & (trksegs['trksegpars_lh']['maxr'] > 450) 
-  
-  
-  # these are deprecated cuts
-  oldtrkpar_mask = (trksegs['trksegpars_lh']['tanDip'] > 0.5) & (trksegs['trksegpars_lh']['tanDip'] < 1.0) & (trksegs['trksegpars_lh']['d0'] > -100) & (trksegs['trksegpars_lh']['d0'] < 100)
+  # check if it is an electron going downstream
+  is_elec = mysel.isElectron(mytrks)
+  is_down = mysel.isDownstrem(trksegs)
   
   # check trk quality
-  trkqual = ntuple["trkqual"] 
-  mytrkqual = trkqual.arrays(library='ak')
-  trkqual_mask = (mytrkqual['trkqual.result']> 0.2)
-  
+  trkqual_mask = mysel.SelectTrkQual(ntuple, 0.2)
+
   # check for crv coincidences 
   crvs = ntuple["crvcoincs"]
   mycrvs = crvs.arrays(library='ak')
   crv_mask = mysel.hasTrkCrvCoincs( trksegs, mycrvs, 150)
   
-  # apply joint mask
-  mytrksegs = trksegs['trksegs'].mask[(is_elec) & (is_down) & (trkent_mask)  & (trksegs_mask)   & (crv_mask) &(oldtrkpar_mask) & (active_mask) & (trkqual_mask) & (trkpars_mask)  ]
-
-  # plot time before and after cuts:
+  # set of trkseg cuts
+  treenames = [ 'trksegs', 'trksegs', 'trksegpars_lh', 'trksegpars_lh', 'trksegpars_lh', 'trksegpars_lh']
+  leaves = [ 'sid', 'time', 't0err','maxr','tanDip','d0']
+  equals = [True, False, False, False, False, False]
+  v1s = [0, 640, 0, 450, 0.5, -100]
+  v2s = [None, 1650, 0.9, 680, 1.0, 100]
+  
+  trkseg_mask_list = mysel.MakeMaskList(trksegs, treenames, leaves, equals, v1s, v2s)
+  
+  # apply joint mask --> can we make this tidier?
+  mytrksegs = trksegs['trksegs'].mask[(is_elec) & (is_down) & (trkqual_mask) & (crv_mask) & (trkseg_mask_list[0]) & (trkseg_mask_list[1]) &  (trkseg_mask_list[2]) & (trkseg_mask_list[3]) & (trkseg_mask_list[4]) & (trkseg_mask_list[5]) ]
+  
+  # make some plots to compare before/after cuts
   myhist = plot.Plot()
+  
+  # plot time before and after cuts:
   flatarraytime = ak.flatten(trksegs['trksegs']['time'], axis=None)
   flatarraycut = ak.flatten(mytrksegs['time'], axis=None)
   dictarrays = { "no cut" : flatarraytime, "with cut" : flatarraycut }
@@ -62,7 +60,7 @@ def main():
   
   # plot the momentum before and after the cuts
   myvect = vec.Vector()
-  electrksegs = trkentall['trksegs'].mask[(is_elec) & (is_down)]
+  electrksegs = trksegs['trksegs'].mask[(is_elec) & (is_down)]
   vector_all = myvect.GetVectorXYZFromLeaf(electrksegs, 'mom')
   magnitude_all = myvect.Mag(vector_all)
   
@@ -76,11 +74,6 @@ def main():
   
   dictarrays = { "all dem" : flatarraymom_all, "dem + trkcuts" : flatarraymom_cut }
   myhist.Plot1DOverlay(dictarrays, 100, 95,115, "Mu2e Example", "fit mom at Trk Ent [ns]", "#events per bin", 'momcutcompare.pdf', 'best', 300,False, True, True)
-  
-  
-  
-
-
   
 if __name__ == "__main__":
     main()

@@ -9,7 +9,7 @@ def main():
   """ simple test function to run some of the utils """
   
   # import the files
-  test_evn = evn.Import(None, "EventNtuple", "ntuple")
+  myevn = evn.Import(None, "EventNtuple", "ntuple")
   
   #import a list of files
   filepath = "/exp/mu2e/data/users/sophie/ensembles/MDS1/file.list"
@@ -18,10 +18,10 @@ def main():
   treename = 'trksegs'
   branchname = 'time'
   surface_id = 0 # tracker entrance FIXME - we need a better way for this
-  branch = test_evn.ImportTreeFromFileList(filepath, treename)
+  branch = myevn.ImportTreeFromFileList(filepath, treename)
 
   # find fit at chosen ID
-  trkent = test_evn.SelectSurfaceID(branch, treename, surface_id)
+  trkent = myevn.SelectSurfaceID(branch, treename, surface_id)
 
   # make 1D plot
   myhist = plot.Plot()
