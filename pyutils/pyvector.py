@@ -14,7 +14,9 @@ class Vector:
   def GetVectorXYZFromLeaf(self, branch, vectorname):
     """ 
     imports a XYZ vector branch e.g. mom and turns it into something which can use funcitons are found in:
-    https://vector.readthedocs.io/en/latest/api/vector._methods.html 
+    https://vector.readthedocs.io/en/latest/api/vector._methods.html
+    
+    assumes leaf is something like trksegs and the vectorname will be something like mom or pos.
     """
 
     # register the vector class

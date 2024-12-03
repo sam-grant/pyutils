@@ -18,43 +18,83 @@ class Select:
     """  Placeholder init """
     pass
 
-  def isElec(self, branch):
+  def isElectron(self, ntuple):
     """ checks if trk is a  e- """
+    trks = ntuple["trk"] 
+    branch = trks.arrays(library='ak')
     trk_mask = (branch['trk.pdg']==11)
     return trk_mask
   
-  def isPos(self, branch):
+  def isPositron(self, ntuple):
     """ checks if trk is  e+ """
+    trks = ntuple["trk"] 
+    branch = trks.arrays(library='ak')
     trk_mask = (branch['trk.pdg']==-11)
     return trk_mask
     
-  def isDown(self, trksegs):
-    """ checks if track is down stream going """
-    trk_mask = (trksegs['trksegs']['mom']["fCoordinates"]["fZ"]>0)
+  def isMuonPlus(self, ntuple):
+    """ checks if trk is a  mu- """
+    trks = ntuple["trk"] 
+    branch = trks.arrays(library='ak')
+    trk_mask = (branch['trk.pdg']==-13)
     return trk_mask
   
+  def isMuonMinus(self, branch):
+    """ checks if trk is  mu+ """
+    trks = ntuple["trk"] 
+    branch = trks.arrays(library='ak')
+    trk_mask = (branch['trk.pdg']==13)
+    return trk_mask
+    
+  def isDownstream(self, trksegs):
+    """ checks if trackseg is downstream going """
+    trk_mask = (trksegs['trksegs']['mom']["fCoordinates"]["fZ"] > 0)
+    return trk_mask
+  
+  def isUpstream(self, trksegs):
+    """ checks if trackseg is upstream going """
+    trk_mask = (trksegs['trksegs']['mom']["fCoordinates"]["fZ"] < 0)
+    return trk_mask
+    
   def SelectSurfaceID(self, branch, treename, sid=0):
     """ allows user to see trk fits only on chosen surface chooses a specified branch """
     trk_mask = (branch[str(treename)]['sid']==sid)
     values = branch[str(treename)].mask[(trk_mask)]
     return values
-  
+    
+  def IsReflected(self, trksegs):
+    """ A track is a reflected track if we have both an upstream and a downstream segment at the tracker entrance """
+    hasupstream = False
+    hasdownstream = False
+    hasboth = False
+    # TODO look at TrkEnt, if more than once, loop the see if up and down stream
+    return hasboth
+    
   def SelectTrkQual(self, tree, value):
     """ select trks of this quality """
     trkqual = tree["trkqual"] 
     mytrkqual = trkqual.arrays(library='ak')
     mask = (mytrkqual['trkqual.result'] > value)
     return mask
-    
-  def hasTrkCrvCoincs(self, trks, crvs, tmax): #FIXME this is not working!
+   
+  def SelectHits(self, ntuple, value):
+    """ select the number of active hits in fit """
+    trks = ntuple["trk"] 
+    branch = trks.arrays(library='ak')
+    trk_mask = (branch['trk.nactive'] > value)
+    return trk_mask
+   
+  def hasTrkCrvCoincs(self, trks, ntuple, tmax):
     """ simple function to remove anything close to a crv coinc """
+    crvst = ntuple["crvcoincs"]
+    crvs = crvst.arrays(library='ak')
     has_coin = np.ones(ak.num(trks, axis=0), dtype=bool)
     for i_evt, evt in enumerate(trks['trksegs']['time']):
         for i_trk, trk in enumerate(evt):
             if ak.num(ak.drop_none(trk), axis = 0) > 0:
                 for i_crv, crv in enumerate(crvs['crvcoincs.time'][ i_evt]):
 
-                    if np.abs(trk[0] - crv) < tmax: #FIXME - is [0] OK?
+                    if np.abs(trk[0] - crv) < tmax:
                         has_coin[i_evt] = False
     return has_coin
 

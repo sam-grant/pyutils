@@ -14,7 +14,7 @@ To activate the environment:
 source /cvmfs/mu2e.opensciencegrid.org/env/ana/current/bin/activate
 ```
 
-If a package you require is not present, please contact Sam.
+If a package you require is not present, please contact Sam Grant (L4 for Analysis Env).
 
 
 ## General Functionality
@@ -29,8 +29,9 @@ To use the mu2e pyutils import as you would any other file:
 import pyimport as evn
 import pyvector as vec
 import pyplot as plot
-import pyprint as prnt
+etc.
 ```
+The pyutils dir has been added to the muse python path so you should be able to import the scripts within your working dir if  you have muse setup.
 
 ### Imports
 
@@ -44,8 +45,8 @@ To accsess a given tree:
 
 ```
 treename = 'trksegs'
-ntuple = test_evn.ImportTree()
-branch = test_evn.ImportBranches(ntuple,[str(treename)])
+ntuple = mytuple.ImportTree()
+branch = mytuple.ImportBranches(ntuple,[str(treename)])
 ```
 ### Select
 
@@ -58,24 +59,29 @@ trkent = test_evn.SelectSurfaceID(branch, treename, surface_id)
 
 Here the user is asking for the trk fit (trksegs) as measured at the front of the tracker.
 
-A number of other helper functions are provided to help those doing a typical trk/evt based analysis:
+A number of other helper functions are provided to help those doing a typical trk/evt based analysis.
 
-* is elec = asks if particle trk fit assumes electron
-* is pos = same but for positron
-* is down = asks if track is downstream going
-* SurfaceIDSelect = selects track fit at chosen surface ID (sid=0 is trk entrance)
-* hasTrkCRVCoin = checks a track to see if it is within a defined time from a crv coincidence
+In the examples (see below) we apply the SU2020 cut set:
 
-Most select functions return a mask. This can be applied to the data using the .mask function. Detailed examples are provded in the example_cuts.py script.
+* time: 640-1650 (result of optimization)
+* trkqual > 0.2 (to remove low quality, likely DIO events)
+* abs(trk - crvcoinc times) > 150ns (to be optimized) to remove cosmic backgrounds
+* number of active hits > 20
+* cut on time error in fit sigT < 0.9
+* rmax[450, 680] to remove cosmics in OPA
+* tDip[0.5,1.0] to help reduce beam electron contamination
+* d0[-100,100] to keep tracks consistent with the target
 
-NOTE: currently underdevelopment by S. Middleton
+Most select functions return a mask. This can be applied to the data using the .mask function.
+
+NOTE: cuts and interface to these currently underdevelopment by S. Middleton, contact for suggestions.
 
 ### Importing multiple files
 
 If you are working with a list of files, write the list to a text file and use:
 
 ```
-test_evn.ImportFileList(fullpath/filename.list)
+mytuple.ImportFileList(fullpath/filename.list)
 ```
 
 ### Plots/style
@@ -145,8 +151,8 @@ A print function is provided in pyprint. To use:
 
 ```
   # print out the first 10 event trk seg information:
-  ntuple = test_evn.ImportTree()
-  trksegs = test_evn.ImportBranches(ntuple,['trksegs','trksegpars_lh','trkhits'])
+  ntuple = mytuple.ImportTree()
+  trksegs = mytuple.ImportBranches(ntuple,['trksegs','trksegpars_lh'])
   myprnt = prnt.Print()
   myprnt.PrintNEvents(trksegs,10)
 ```
@@ -160,7 +166,7 @@ To use the vector functionality:
 ```
 myvect = vec.Vector()
 vecbranchname = 'mom'
-vector_test = myvect.GetVectorXYZ(trkent, treename, vecbranchname)
+vector_test = myvect.GetVectorXYZFromLeaf(trksegs, 'mom')
 magnitude = myvect.Mag(vector_test)
 print("list of mom mags: ", magnitude)
 
@@ -171,11 +177,21 @@ myhist.Plot1D(flatarraymom  , None, 100, 100,115, "example", "fit mom at Trk Ent
 
 ## MC util
 
+Util helps users understand the MC origins of given tracks.
+
 Development underway by Leo Borrel (contact for update).
 
 ## Examples
 
+A set of examples are provided in the example_analysis_scripts directory:
+
+* example_plotting.py: example of how to plot and print
+* example_multifiles.py: example of how to import a list of EventNtuples
+* example_cuts.py: example for how to explicitly call cuts
+* example_multicuts.py: example of how to apply a list of cuts
+
+These can be ran from anywhere within the working dir (note you will need the style file in the current dir for now)
 
 ## Development
 
-Reach out to Andy (L3 Analysis Tools/L4 Analysis Framework), Sophie (L3 Analysis Tools) or Sam (L4 Analysis Environment) if you want to contribute.
+Reach out to Andy, Sophie or Sam Grant (L4 Analysis Environment) if you want to contribute.
