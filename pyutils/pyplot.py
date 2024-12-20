@@ -54,18 +54,15 @@ class Plot:
     if ax.get_xscale() != 'log' and (abs(xmax) >= 1e4 or abs(xmax) <= 1e-4): # x-axis 
       ax.xaxis.set_major_formatter(ScalarFormatter(useMathText=True)) # Use math formatting 
       ax.ticklabel_format(style='sci', axis='x', scilimits=(0,0)) # Set scientific notation
-      ax.xaxis.offsetText.set_fontsize(13) # Set font size
     if ax.get_yscale() != 'log' and (abs(ymax) >= 1e4 or abs(ymax) <= 1e-4): # y-axis
       ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
       ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-      ax.yaxis.offsetText.set_fontsize(13)
     if cbar is not None: # Colour bar 
         # Access the max value of the cbar range
         cmax = cbar.norm.vmax
         if abs(cmax) >= 1e4 or abs(cmax) <= 1e-4:
           cbar.ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))  # Use math formatting
           cbar.ax.ticklabel_format(style='sci', axis='y', scilimits=(0, 0))  # Set scientific notation
-          cbar.ax.yaxis.offsetText.set_fontsize(13)  # ''
     return
 
   def Plot1D(
@@ -317,15 +314,15 @@ class Plot:
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     
-    # TODO: scientific notation for graphs
-    # self.ScientificNotation(ax) 
+    # Scientific notation
+    self.ScientificNotation(ax) 
     
     # Draw
     plt.tight_layout()
 
     # Save
     if save:
-      plt.savefig(fout, dpi=NDPI, bboxinches="tight")
+      plt.savefig(fout, dpi=NDPI, bbox_inches="tight")
       print('\n---> Wrote:\n\t', fout)
 
     # Show
@@ -338,10 +335,11 @@ class Plot:
     return
   
   def PlotGraphOverlay(
-      self, graphs_, xerr=None, yerr=None,
+      self, graphs_,
       title=None, xlabel=None, ylabel=None,
       xmin=None, xmax=None, ymin=None, ymax=None,
       leg_pos='best', linestyle='None', fout='graph.png',
+      y_lines=None, x_lines=None,
       log_x=False, log_y=False, NDPI=300, 
       show=True, save=True
     ):
@@ -357,15 +355,15 @@ class Plot:
       # Just to be explicit
       x = graph_[0]
       y = graph_[1]
-      xerr = graph_[2]
-      yerr = graph_[3]
+      xerr = graph_[2] #FIXME: do you really have to write None, None every time? Can we improve this?
+      yerr = graph_[3] 
       
       # Error bars
       if xerr is None: # If only using yerr
         xerr = [0] * len(x) 
       if yerr is None: # If only using xerr 
         yerr = [0] * len(y) 
-
+      
       # Create this graph
       ax.errorbar(x, y, xerr=xerr, yerr=yerr, fmt='o',  label=label, markersize=4, capsize=2, elinewidth=1, linestyle=linestyle, linewidth=1)
       
@@ -386,18 +384,26 @@ class Plot:
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     
-    # TODO: scientific notation for graphs
-    # self.ScientificNotation(ax) 
+    # Scientific notation 
+    self.ScientificNotation(ax) 
     
     # Legend
     ax.legend(loc=leg_pos)
+
+    # Lines
+    if y_lines:
+      for y_line in y_lines: 
+        ax.axhline(y=y_line, color='gray', linestyle='--')
+    if x_lines:
+      for x_line in x_lines: 
+        ax.axvline(x=x_line, color='gray', linestyle='--')
     
     # Draw
     plt.tight_layout()
 
     # Save 
     if save:
-      plt.savefig(fout, bbox_inches="tight")
+      plt.savefig(fout, dpi=NDPI, bbox_inches="tight")
       print("\n---> Wrote:\n\t", fout)
 
     # Save
