@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+import os
 import awkward as ak
 import matplotlib.pyplot as plt
 import math
@@ -10,8 +11,9 @@ import matplotlib.colors as colors
 
 class Plot:
   def __init__(self):
-    """  Placeholder init """
-    plt.style.use('mu2e.mplstyle')
+    """  init """
+    style_path = os.path.join(os.path.dirname(__file__), 'mu2e.mplstyle')
+    plt.style.use(style_path)
     pass  
     
   def RoundToSigFig(self, val, sf):
@@ -28,18 +30,18 @@ class Plot:
       # Round to the nearest number of significant figures
       return round(val * scale) / scale
 
-  def GetStats(self, array_, xmin, xmax): 
+  def GetStats(self, array, xmin, xmax): 
     """  
       Stats for 1D histograms
     """ 
-    array_ = ak.to_numpy(array_) # Convert to numpy array
-    n_entries = len(array_) # Number of entries
-    mean = np.mean(array_) # Mean
-    mean_err = stats.sem(array_) # Mean error (standard error on the mean from scipy)
-    std_dev = np.std(array_) # Standard deviation
+    array = ak.to_numpy(array) # Convert to numpy array
+    n_entries = len(array) # Number of entries
+    mean = np.mean(array) # Mean
+    mean_err = stats.sem(array) # Mean error (standard error on the mean from scipy)
+    std_dev = np.std(array) # Standard deviation
     std_dev_err = np.sqrt(std_dev**2 / (2*n_entries)) # Standard deviation error assuming normal distribution
-    underflows = len(array_[array_ < xmin]) # Number of underflows
-    overflows = len(array_[array_ > xmax]) # Number of overflows
+    underflows = len(array[array < xmin]) # Number of underflows
+    overflows = len(array[array > xmax]) # Number of overflows
     return n_entries, mean, mean_err, std_dev, std_dev_err, underflows, overflows
 
   def ScientificNotation(self, ax, cbar=None): #FIXME - we might want to make the extreme ranges bigger
@@ -52,46 +54,46 @@ class Plot:
     if ax.get_xscale() != 'log' and (abs(xmax) >= 1e4 or abs(xmax) <= 1e-4): # x-axis 
       ax.xaxis.set_major_formatter(ScalarFormatter(useMathText=True)) # Use math formatting 
       ax.ticklabel_format(style='sci', axis='x', scilimits=(0,0)) # Set scientific notation
-      ax.xaxis.offsetText.set_fontsize(13) # Set font size
     if ax.get_yscale() != 'log' and (abs(ymax) >= 1e4 or abs(ymax) <= 1e-4): # y-axis
       ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
       ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-      ax.yaxis.offsetText.set_fontsize(13)
     if cbar is not None: # Colour bar 
         # Access the max value of the cbar range
         cmax = cbar.norm.vmax
         if abs(cmax) >= 1e4 or abs(cmax) <= 1e-4:
           cbar.ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))  # Use math formatting
           cbar.ax.ticklabel_format(style='sci', axis='y', scilimits=(0, 0))  # Set scientific notation
-          cbar.ax.yaxis.offsetText.set_fontsize(13)  # ''
     return
 
-  def Plot1D( self, array_, weights_=None, nbins=100, xmin=-1.0, xmax=1.0, 
-    title=None, xlabel=None, ylabel=None, col='black', leg_pos='best', fout='hist.png', NDPI=300,
-    stats=True, log_x=False, log_y=False, under_over=False, stat_errors=False, error_bars=False, show=True): 
+  def Plot1D(
+    self, array, weights=None, nbins=100, xmin=-1.0, xmax=1.0, 
+    title=None, xlabel=None, ylabel=None, col='black', leg_pos='best', fout='hist.png', NDPI=300, 
+    stats=True, log_x=False, log_y=False, under_over=False, stat_errors=False, error_bars=False,
+    show=True, save=True
+  ): 
     """ Plot a 1D histogram from a flat array """
     
     # Create figure and axes
     fig, ax = plt.subplots()
     
     # Create the histogram 
-    counts_, bin_edges_, _ = ax.hist(array_, bins=int(nbins), range=(xmin, xmax), histtype='step', edgecolor=col,  fill=False, density=False, weights=weights_)
-    bin_centres_ = (bin_edges_[:-1] + bin_edges_[1:]) / 2
+    counts, bin_edges, _ = ax.hist(array, bins=int(nbins), range=(xmin, xmax), histtype='step', edgecolor=col,  fill=False, density=False, weights=weights)
+    bin_centres_ = (bin_edges[:-1] + bin_edges[1:]) / 2
     bin_errors_ = 0 * len(bin_centres_)
     
     # Calculate errors
-    if weights_ is None:
-        bin_errors_ = np.sqrt(counts_)  # Poisson errors for unweighted data
+    if weights is None:
+        bin_errors_ = np.sqrt(counts)  # Poisson errors for unweighted data
     else:
         # Weighted errors: sqrt(sum(weights^2)) for each bin
-        weights_squared_, _ = np.histogram(array_, bins=int(nbins), range=(xmin, xmax), weights=np.square(weights_))
-        bin_errors_ = np.sqrt(weights_squared_)
+        weights_squared, _ = np.histogram(array, bins=int(nbins), range=(xmin, xmax), weights=np.square(weights))
+        bin_errors_ = np.sqrt(weights_squared)
         
     # Plot the histogram 
     if error_bars:
-        ax.errorbar(bin_centres_, counts_, yerr=bin_errors_, ecolor=col, fmt='.', color=col, capsize=2, elinewidth=1)
+        ax.errorbar(bin_centres_, counts, yerr=bin_errors_, ecolor=col, fmt='.', color=col, capsize=2, elinewidth=1)
     else:
-        ax.hist(array_, bins=int(nbins), range=(xmin, xmax), histtype='step', edgecolor=col, fill=False, density=False, weights=weights_)
+        ax.hist(array, bins=int(nbins), range=(xmin, xmax), histtype='step', edgecolor=col, fill=False, density=False, weights=weights)
         
     # Set x-axis limits
     ax.set_xlim(xmin, xmax)
@@ -103,7 +105,7 @@ class Plot:
       ax.set_yscale('log')
       
     # Statistics
-    N, mean, mean_err, std_dev, std_dev_err, underflows, overflows = self.GetStats(array_, xmin, xmax)
+    N, mean, mean_err, std_dev, std_dev_err, underflows, overflows = self.GetStats(array, xmin, xmax)
     
     # Create legend text (roughly imitating the ROOT statbox)
     leg_txt = f'Entries: {N}\nMean: {self.RoundToSigFig(mean, 3)}\nStd Dev: {self.RoundToSigFig(std_dev, 3)}'
@@ -128,20 +130,26 @@ class Plot:
     
     # Draw
     plt.tight_layout()
-    plt.savefig(fout, dpi=NDPI, bbox_inches='tight')
+      
+    # Save
+    if save:
+      plt.savefig(fout, dpi=NDPI, bbox_inches='tight')
+      print('\n---> Wrote:\n\t', fout)
     
     # Show (for interactive use)
     if show: 
       plt.show()
-      
-    # Save 
-    print('\n---> Wrote:\n\t', fout)
     
     # Clear memory
-    plt.close()
+    plt.close(fig) # Close this figure
+
     return
     
-  def Plot1DOverlay( self, hists_dict_, nbins=100, xmin=-1.0, xmax=1.0, title=None, xlabel=None, ylabel=None, fout='hist.png', leg_pos='best', NDPI=300, log_x=False, log_y=False, show=False):
+  def Plot1DOverlay(
+    self, hists_dict, nbins=100, xmin=-1.0, xmax=1.0,
+    title=None, xlabel=None, ylabel=None, fout='hist.png', NDPI=300, 
+    leg_pos='best', log_x=False, log_y=False, show=True, save=True
+  ):
     """ 
       Overlay many 1D histograms from a dictionary of flat arrays 
       hists_ = { label_0 : array_0, ..., label_n : array_n }
@@ -151,7 +159,7 @@ class Plot:
     fig, ax = plt.subplots()
     
     # Iterate over the hists and plot each one
-    for i, (label, hist) in enumerate(hists_dict_.items()):
+    for i, (label, hist) in enumerate(hists_dict.items()):
       ax.hist(hist, bins=nbins, range=(xmin, xmax), histtype='step', fill=False, density=False, label=label)
       
     # Log scale 
@@ -168,49 +176,55 @@ class Plot:
     
     # Scientific notation
     self.ScientificNotation(ax)
+    
     # Add legend to the plot
     ax.legend(loc=leg_pos)
     
     # Draw
     plt.tight_layout()
-    plt.savefig(fout, dpi=NDPI, bbox_inches='tight')
+
+    # Save
+    if save:
+      plt.savefig(fout, dpi=NDPI, bbox_inches='tight')
+      print('\n---> Wrote:\n\t', fout)
     
     # Show
     if show:
       plt.show()
+        
     # Clear memory
     plt.close()
-    print('\n---> Wrote:\n\t', fout)
+    
     return
   
   def Plot2D(
-      self, x_, y_, weights_=None, nbins_x=100, xmin=-1.0, xmax=1.0, nbins_y=100, ymin=-1.0, ymax=1.0,
-      title=None, xlabel=None, ylabel=None, zlabel=None, fout='hist.png', cmap='inferno', NDPI=300, 
-      log_x=False, log_y=False, log_z=False, cb=True, show=True
+      self, x, y, weights=None, nbins_x=100, xmin=-1.0, xmax=1.0, nbins_y=100, ymin=-1.0, ymax=1.0,
+      title=None, xlabel=None, ylabel=None, zlabel=None, fout='hist.png', cmap='inferno', NDPI=300,
+      log_x=False, log_y=False, log_z=False, cb=True, show=True, save=True
   ):
     """  
       Plot a 2D histogram from two flat arrays of the same length 
     """ 
     
     # Convert to numpy
-    x_ = ak.to_numpy(x_)
-    y_ = ak.to_numpy(y_)
+    x = ak.to_numpy(x)
+    y = ak.to_numpy(y)
     
     # Filter out empty entries
-    valid_indices_ = [i for i in range(len(x_)) if np.any(x_[i]) and np.any(y_[i])]
-    x_ = [x_[i] for i in valid_indices_]
-    y_ = [y_[i] for i in valid_indices_]
+    valid_indices_ = [i for i in range(len(x)) if np.any(x[i]) and np.any(y[i])]
+    x = [x[i] for i in valid_indices_]
+    y = [y[i] for i in valid_indices_]
     
-    if weights_ is not None:
-      weights_ = [weights_[i] for i in valid_indices_]
+    if weights is not None:
+      weights = [weights[i] for i in valid_indices_]
     # Check if the input arrays are not empty and have the same length
-    if len(x_) == 0 or len(y_) == 0:
+    if len(x) == 0 or len(y) == 0:
         raise ValueError("Input arrays are empty.")
-    if len(x_) != len(y_):
+    if len(x) != len(y):
         raise ValueError("Input arrays are of different length.")
         
     # Create 2D histogram
-    hist, _, _ = np.histogram2d(x_, y_, bins=[int(nbins_x), int(nbins_y)], range=[[xmin, xmax], [ymin, ymax]], weights=weights_)
+    hist, _, _ = np.histogram2d(x, y, bins=[int(nbins_x), int(nbins_y)], range=[[xmin, xmax], [ymin, ymax]], weights=weights)
     
     # Set up the plot
     fig, ax = plt.subplots()
@@ -228,11 +242,12 @@ class Plot:
         
     # Plot the 2D histogram
     im = ax.imshow(hist.T, cmap=cmap, extent=[xmin, xmax, ymin, ymax], aspect='auto', origin='lower', norm=norm) 
+    
     # Add colourbar and format it
     cbar=None
     if cb: 
      cbar = plt.colorbar(im)
-     cbar.ax.tick_params(labelsize=13)  # Adjust font size  
+     # cbar.ax.tick_params(labelsize=13)  # Adjust font size  
      cbar.set_label(zlabel)
      
     # Format titles
@@ -242,114 +257,160 @@ class Plot:
     
     # Scientific notation
     self.ScientificNotation(ax, cbar)
+    
     # Draw 
     plt.tight_layout()
-    plt.savefig(fout, dpi=NDPI, bbox_inches="tight")
-    if show: # Show
+
+    # Save
+    if save:
+      plt.savefig(fout, dpi=NDPI, bboxinches='tight')
+      print('\n---> Wrote:\n\t', fout)
+
+    # Show
+    if show: 
       plt.show()
+      
     # Clear memory
     plt.close()
-    print("\n---> Wrote:\n\t", fout)
+    
     return
   
   def PlotGraph(
-      self, x_, y_, xerr_=None, yerr_=None,
+      self, x, y, xerr=None, yerr=None,
       title=None, xlabel=None, ylabel=None,
       xmin=None, xmax=None, ymin=None, ymax=None,
-      col='black', linestyle='None', fout='graph.png',
-      log_x=False, log_y=False, show=True, NDPI=300
+      col='black', linestyle='None', fout='graph.png', 
+      log_x=False, log_y=False, NDPI=300,
+      show=True, save=True
     ):
     """  
     Plot a scatter graph with error bars (if included)
     """  
     # Create figure and axes
     fig, ax = plt.subplots()
-    if xerr_ is None: # If only using yerr
-      xerr_ = [0] * len(x_) 
-    if yerr_ is None: # If only using xerr 
-      yerr_ = [0] * len(y_) 
-    ax.errorbar(x_, y_, xerr=xerr_, yerr=yerr_, fmt='o', color=col, markersize=4, ecolor=col, capsize=2, elinewidth=1, linestyle=linestyle, linewidth=1)
+    
+    if xerr is None: # If only using yerr
+      xerr = [0] * len(x) 
+    if yerr is None: # If only using xerr 
+      yerr = [0] * len(y) 
+
+    # Create graph
+    ax.errorbar(x, y, xerr=xerr, yerr=yerr, fmt='o', color=col, markersize=4, ecolor=col, capsize=2, elinewidth=1, linestyle=linestyle, linewidth=1)
+    
     # Set axis limits
     if xmin is not None or xmax is not None:
         ax.set_xlim(left=xmin, right=xmax)
     if ymin is not None or ymax is not None:
         ax.set_ylim(bottom=ymin, top=ymax)
+
+    # Log scale
     if log_x: 
         ax.set_xscale("log")
     if log_y: 
         ax.set_yscale("log")
+      
     # Set title, xlabel, and ylabel
-    ax.set_title(title, fontsize=15, pad=10)
-    ax.set_xlabel(xlabel, fontsize=13, labelpad=10) 
-    ax.set_ylabel(ylabel, fontsize=13, labelpad=10) 
-    # Set font size of tick labels on x and y axes
-    ax.tick_params(axis='x', labelsize=13)  
-    ax.tick_params(axis='y', labelsize=13)  
-    # TODO: scientific notation for graphs
-    # self.ScientificNotation(ax) 
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    
+    # Scientific notation
+    self.ScientificNotation(ax) 
+    
     # Draw
     plt.tight_layout()
-    plt.savefig(fout, dpi=NDPI, bbox_inches="tight")
+
+    # Save
+    if save:
+      plt.savefig(fout, dpi=NDPI, bbox_inches="tight")
+      print('\n---> Wrote:\n\t', fout)
+
+    # Show
     if show:
       plt.show()
-    print("\n---> Wrote:\n\t", fout)
+    
     # Clear memory
     plt.close()
+
     return
   
   def PlotGraphOverlay(
-      self, graphs_, xerr_=None, yerr_=None,
+      self, graphs_,
       title=None, xlabel=None, ylabel=None,
       xmin=None, xmax=None, ymin=None, ymax=None,
       leg_pos='best', linestyle='None', fout='graph.png',
-      log_x=False, log_y=False, show=True, NDPI=300
+      y_lines=None, x_lines=None,
+      log_x=False, log_y=False, NDPI=300, 
+      show=True, save=True
     ):
     """  
       Overlay many scatter graphs
     """  
     # Create figure and axes
     fig, ax = plt.subplots()
+    
     # Loop through graphs and plot
     for i, (label, graph_) in enumerate(graphs_.items()):
+      
       # Just to be explicit
-      x_ = graph_[0]
-      y_ = graph_[1]
-      xerr_ = graph_[2]
-      yerr_ = graph_[3]
+      x = graph_[0]
+      y = graph_[1]
+      xerr = graph_[2] #FIXME: do you really have to write None, None every time? Can we improve this?
+      yerr = graph_[3] 
+      
       # Error bars
-      if xerr_ is None: # If only using yerr
-        xerr_ = [0] * len(x_) 
-      if yerr_ is None: # If only using xerr 
-        yerr_ = [0] * len(y_) 
-
-      # Plot
-      ax.errorbar(x_, y_, xerr=xerr_, yerr=yerr_, fmt='o',  label=label, markersize=4, capsize=2, elinewidth=1, linestyle=linestyle, linewidth=1)
+      if xerr is None: # If only using yerr
+        xerr = [0] * len(x) 
+      if yerr is None: # If only using xerr 
+        yerr = [0] * len(y) 
+      
+      # Create this graph
+      ax.errorbar(x, y, xerr=xerr, yerr=yerr, fmt='o',  label=label, markersize=4, capsize=2, elinewidth=1, linestyle=linestyle, linewidth=1)
+      
     # Set axis limits
     if xmin is not None or xmax is not None:
         ax.set_xlim(left=xmin, right=xmax)
     if ymin is not None or ymax is not None:
         ax.set_ylim(bottom=ymin, top=ymax)
+
+    # Log scale
     if log_x: 
         ax.set_xscale("log")
     if log_y: 
         ax.set_yscale("log")
+      
     # Set title, xlabel, and ylabel
-    ax.set_title(title, fontsize=15, pad=10)
-    ax.set_xlabel(xlabel, fontsize=13, labelpad=10) 
-    ax.set_ylabel(ylabel, fontsize=13, labelpad=10) 
-    # Set font size of tick labels on x and y axes
-    ax.tick_params(axis='x', labelsize=13)  
-    ax.tick_params(axis='y', labelsize=13)  
-    # TODO: scientific notation for graphs
-    # self.ScientificNotation(ax) 
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    
+    # Scientific notation 
+    self.ScientificNotation(ax) 
+    
     # Legend
-    ax.legend(loc=leg_pos, frameon=False, fontsize=13)
+    ax.legend(loc=leg_pos)
+
+    # Lines
+    if y_lines:
+      for y_line in y_lines: 
+        ax.axhline(y=y_line, color='gray', linestyle='--')
+    if x_lines:
+      for x_line in x_lines: 
+        ax.axvline(x=x_line, color='gray', linestyle='--')
+    
     # Draw
     plt.tight_layout()
-    plt.savefig(fout, dpi=NDPI, bbox_inches="tight")
+
+    # Save 
+    if save:
+      plt.savefig(fout, dpi=NDPI, bbox_inches="tight")
+      print("\n---> Wrote:\n\t", fout)
+
+    # Save
     if show:
       plt.show()
-    print("\n---> Wrote:\n\t", fout)
+      
     # Clear memory
     plt.close()
+
     return
