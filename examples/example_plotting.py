@@ -1,49 +1,90 @@
 #! /usr/bin/env python
+import sys
+sys.path.append("../../utils/pyutils")
+
 import pyimport as evn
 import pyvector as vec
 import pyplot as plot
 import pyprint as prnt
 import pyselect as slct
+
 import awkward as ak
-def main():
-  """ simple test function to run some of the utils """
+
+def example_plotting():
+  """ Simple demo function to run some of the utils """
   
-  # import the files
+  # Import the files
   test_evn = evn.Import("/exp/mu2e/data/users/sophie/ensembles/MDS1/MDS1av0.root", "EventNtuple", "ntuple")
 
-  # import code and extract branch
+  # Import code and extract branch
   treename = 'trksegs'
   branchname = 'time'
   surface_id = 0 # tracker entrance FIXME - we need a better way for this
   ntuple = test_evn.ImportTree()
-  branch = test_evn.ImportBranches(ntuple,[str(treename)])
+  branches = test_evn.ImportBranches(ntuple,[str(treename)])
   
-  # find fit at chosen ID
-  mysel = slct.Select()
-  trkent = mysel.SelectSurfaceID(branch, treename, surface_id)
+  # Find fit at chosen ID
+  selector = slct.Select()
+  trkent = selector.SelectSurfaceID(branches, treename, surface_id)
   
-  # print out the first 10 events:
-  myprnt = prnt.Print()
-  myprnt.PrintNEvents(branch,10)
+  # Print out the first event
+  printer = prnt.Print()
+  # Print PrintNEvents help
+  help(printer.PrintNEvents)
+  printer.PrintNEvents(branches, n_events=1)
   
-  # make 1D plot
-  myhist = plot.Plot()
+  # Make 1D plot from flattened array
   flatarraytime = ak.flatten(trkent[str(branchname)], axis=None)
-  myhist.Plot1D(flatarraytime, None, 100, 450, 1695, "Mu2e Example", "fit time at Trk Ent [ns]", "#events per bin", 'black', 'best', 'time.pdf', 300, True, False, False, False, True, True, True)
+  plotter = plot.Plot()
+
+  # Print Plot1D help (press "q" to exit)
+  help(plotter.Plot1D)
+
+  # Make plot
+  plotter.Plot1D(
+    array=flatarraytime,
+    nbins=100,
+    xmin=450,
+    xmax=1695,
+    title="Example 1D histogram",
+    xlabel="Fit time at Trk Ent [ns]",
+    ylabel="Events per bin",
+    out_path='h1_time.png',
+    stat_box=True,
+    error_bars=True
+  )
   
-  # access vectors
-  myvect = vec.Vector()
+  # Access vectors
+  vector = vec.Vector()
   vecbranchname = 'mom'
-  trkentall = mysel.SelectSurfaceID(branch, treename, surface_id)
-  vector_test = myvect.GetVectorXYZFromLeaf(trkentall, vecbranchname)
-  magnitude = myvect.Mag(vector_test)
+  trkentall = selector.SelectSurfaceID(branches, treename, surface_id)
+  vector_test = vector.GetVectorXYZFromLeaf(trkentall, vecbranchname)
+  magnitude = vector.Mag(vector_test)
 
   # make 1D plot of magnitudes
   flatarraymom = ak.flatten(magnitude, axis=None)
   
-  # 2D mom time plot
-  myhist.Plot2D( flatarraymom, flatarraytime, None, 100, 95, 115, 100, 450, 1650, "Mu2e Example", "fit mom at Trk Ent [MeV/c]", "fit time at Trk Ent [ns]", None, 'timevmom.pdf', 'inferno',300,False, False, False, True,True)
-        
+  # Print Plot2D help (press "q" to exit)
+  help(plotter.Plot2D)
+
+  # Make 2D plot
+  plotter.Plot2D(
+    x=flatarraymom,
+    y=flatarraytime,
+    nbins_x=100,
+    xmin=95,
+    xmax=115,
+    nbins_y=100,
+    ymin=450,
+    ymax=1650, 
+    title="Example 2D histogram",
+    xlabel="Fit mom at Trk Ent [MeV/c]",
+    ylabel="Fit time at Trk Ent [ns]",
+    out_path='h2_timevmom.png'
+  )
   
+def main():
+  example_plotting()
+
 if __name__ == "__main__":
     main()
