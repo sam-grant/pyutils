@@ -65,6 +65,22 @@ def example_plotting(filename):
   # make 1D plot of magnitudes
   flatarraymom = ak.flatten(magnitude, axis=None)
   
+  # Make plot
+  plotter.Plot1D(
+    array=flatarraymom,
+    nbins=100,
+    xmin=0,
+    xmax=300,
+    title="Example 1D histogram",
+    xlabel="Fit mom at Trk Ent [MeV/c]",
+    ylabel="Events per bin",
+    out_path='h1_mom.png',
+    stat_box=True,
+    error_bars=True,
+    log_y=True
+  )
+  
+  
   # Print Plot2D help (press "q" to exit)
   help(plotter.Plot2D)
 
