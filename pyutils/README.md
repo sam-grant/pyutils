@@ -145,6 +145,16 @@ Plot2D (with defaults):
 * cb=True: add colour bar
 * show=True: show plot interactively
 
+### Helper functions
+
+Docstrings have been developed to help the user implement the long list of arguments for the plotting functions.
+
+```
+help(plotter.Plot1D)
+```
+
+press "q" to quit the help.
+
 ### Printing/Debugging
 
 A print function is provided in pyprint. To use:
@@ -185,10 +195,9 @@ Development underway by Leo Borrel (contact for update).
 
 A set of examples are provided in the example_analysis_scripts directory:
 
-* example_plotting.py: example of how to plot and print
-* example_multifiles.py: example of how to import a list of EventNtuples
-* example_cuts.py: example for how to explicitly call cuts
-* example_multicuts.py: example of how to apply a list of cuts
+* example_plotting.py: example of how to plot and print, takes filename as an arg
+* example_multifiles.py: example of how to import a list of EventNtuples, takes full path and file list as an ar
+* example_multicuts.py: example of how to apply a list of cuts, takes filename as an arg
 
 These can be ran from anywhere within the working dir (note you will need the style file in the current dir for now)
 
