@@ -1,3 +1,5 @@
+import awkward as ak
+
 class Print:
     """
     Utility class for printing structured event data in a human-readable format.
@@ -5,11 +7,34 @@ class Print:
     This class provides methods to print individual events or multiple events from
     an Awkward array, handling nested fields and subfields recursively.
     """
-    def __init__(self):
-        """ Placeholder init """ 
-        pass  
+    def __init__(self, verbose=False, precision=1):
+        """ Initialise with optional verbose flag 
+        Args:
+            verbose (bool, optional): Print full arrays without truncation. Defaults to False.
+            precision (int, optional): Specifiy the number of decimal points when using verbose option. Defaults to 1. 
+        """ 
+        self.verbose = verbose  
+        self.precision = precision
+        self.print_prefix = "[pyprint] "
+
+    def _set_precision(self, value):
+        """
+        Helper function to set the precision of value array elements 
+        
+        Args:
+            value: The value to format
+            
+        Returns:
+            Formatted value 
+        """
+        if isinstance(value, float):
+            return float(f"{value:.{self.precision}f}")
+        elif isinstance(value, list):
+            return [self._set_precision(item) for item in value]
+        else:
+            return value
     
-    def PrintEvent(self, event, prefix=''):
+    def print_event(self, event, prefix=''):
         """
         Print a single event in human-readable format, including all fields and subfields.
         
@@ -22,14 +47,22 @@ class Print:
         """ 
         for field in event.fields: # Loop through array elements in the event
             value = event[field] # Get the value
-            full_field = f'{prefix}{field}' # Set full field using prefix provided in function call
-            if hasattr(value, 'fields') and value.fields: # Check for subfields 
-                self.PrintEvent(value, prefix=f"{full_field}.")  # Recurse into subfields
+            full_field = f"{prefix}{field}" # Set full field using prefix provided in function call
+            if hasattr(value, "fields") and value.fields: # Check for subfields 
+                self.print_event(value, prefix=f"{full_field}.")  # Recurse into subfields
             else: # If no further subfields, print the full field and value
-                print(f'{full_field}: {value}')
-        return
+                if self.verbose and hasattr(value, "__iter__"): # Print full array 
+                    try:
+                        # Convert ak.array to list
+                        value = ak.to_list(value)
+                        # Format the values with specified precision
+                        value = self._set_precision(value)
+                    except Exception as e:
+                        print(f"{self.print_prefix}❌ Exception on {full_field}: {e}")
+                # Print array 
+                print(f"{full_field}: {value}")
     
-    def PrintNEvents(self, array, n_events=1):
+    def print_n_events(self, array, n_events=1):
         """
         Print the first n events from an array in human-readable format.
             
@@ -57,11 +90,11 @@ class Print:
           field2.subfield1: value
           -------------------------------------------------------------------------------------
         """
-        print(f"\n---> Printing {n_events} event(s)...\n")
+        print(f"\n{self.print_prefix}---> Printing {n_events} event(s)...\n")
         for i, event in enumerate(array, start=1): # Iterate event-by-event 
-            print('-'*85)
-            self.PrintEvent(event) # Call self.print_event() 
-            print('-'*85)
+            print("-"*85)
+            self.print_event(event) # Call self.print_event() 
+            print("-"*85)
             print()
             if i == n_events: # Return if 'n_events' is reached
                 return 
