@@ -6,7 +6,7 @@ from pyprocess import Processor
 class Importer:
     """High-level interface for importing branches from files and datasets"""
     
-    def __init__(self, dir_name="EventNtuple", tree_name="ntuple", verbosity=0):
+    def __init__(self, dir_name="EventNtuple", tree_name="ntuple", verbosity=1):
         """Initialise the importer
         
         Args:

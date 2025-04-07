@@ -6,7 +6,7 @@ import awkward as ak
 class Processor:
     """Handles file list operations and parallel processing of multiple files"""
     
-    def __init__(self, verbosity=0):
+    def __init__(self, verbosity=1):
         """Initialise the processor
         
         Args:
@@ -16,7 +16,7 @@ class Processor:
         self.print_prefix = "[pyprocess] "
 
     def get_file_list(self, defname=None, file_list_path=None):
-        """Get a list of files from a SAM definition or a text file
+        """Get a list of files from a SAM definition OR a text file
         
         Args:
             defname: SAM definition name 
@@ -53,7 +53,7 @@ class Processor:
         # Otherwise, try to use the SAM definition
         elif defname:
             if self.verbosity > 1:
-                print(f"{print_prefix}Loading file list for SAM definition: {defname}")
+                print(f"{self.print_prefix}Loading file list for SAM definition: {defname}")
             
             try:
                 # Setup commands for SAM query
@@ -83,11 +83,11 @@ class Processor:
         
         Args:
             file_list: List of files to process
-            process_func: Function to call for each file (must accept filename as first argument)
+            process_func: Function to call for each file (must accept file name as first argument)
             max_workers: Maximum number of worker threads
             
         Returns:
-            Combined result from all processed files
+            List of results from each processed file
         """
         
         if not file_list:
