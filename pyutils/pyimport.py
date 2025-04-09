@@ -6,23 +6,34 @@ from pyprocess import Processor
 class Importer:
     """High-level interface for importing branches from files and datasets"""
     
-    def __init__(self, dir_name="EventNtuple", tree_name="ntuple", verbosity=1):
+    def __init__(self, dir_name="EventNtuple", tree_name="ntuple", 
+                 use_remote=False, location="tape", schema="root", 
+                 verbosity=1):
         """Initialise the importer
         
         Args:
+            dir_name: Ntuple directory in file 
+            tree_name: Ntuple name in file directory
+            use_remote: Flag for reading remote files 
+            location: Remote files only. File location: tape (default), disk, scratch, nersc 
+            schema: Remote files only. Schema used when writing the URL: root (default), http, path, dcap, samFile
             verbosity: Print detail level (0: minimal, 1: medium, 2: maximum) 
         """
         self.dir_name = dir_name
         self.tree_name = tree_name
+        self.use_remote = use_remote
+        self.location = location
+        self.schema = schema
         self.verbosity = verbosity 
-        
+
         # Create reader and processor only when needed
         self.reader = None
         self.processor = None
         
         # Print prefix
         self.print_prefix = "[pyimport] "
-
+        
+        # Confirm init
         print(f"{self.print_prefix}Initialised with path '{dir_name}/{tree_name}' and verbosity={self.verbosity}") 
         
     def _get_array(self, file_name, branches=None, quiet=False):
@@ -90,14 +101,12 @@ class Importer:
             print(f"{self.print_prefix}❌  Error getting branches in file {file_name}: {e}")
             return None
     
-    def import_file(self, file_name, branches=None, 
-                    use_remote=False, quiet=False): 
+    def import_file(self, file_name, branches=None, quiet=False): 
         """Import branches from a single file 
         
         Args:
             file_name: Path to the file
             branches: Flat list or grouped dict of branches to import
-            use_remote: If accessing the file remotely (/pnfs not mounted)
             quiet: limit verbosity if calling from import_dataset
             
         Returns:
@@ -105,7 +114,11 @@ class Importer:
         """
         
         # Initialise reader instance 
-        self.reader = Reader(use_remote=use_remote, verbosity=self.verbosity)
+        self.reader = Reader(
+            use_remote=self.use_remote,
+            location=self.location,
+            schema=self.schema,
+            verbosity=self.verbosity)
 
         # Result container
         result = {}
@@ -128,8 +141,7 @@ class Importer:
             
         return result
 
-    def import_dataset(self, defname=None, file_list_path=None,
-                       branches=None, use_remote=False, max_workers=None):
+    def import_dataset(self, defname=None, file_list_path=None, branches=None, max_workers=None):
         """Import branches from a SAM definition or a file list
         
         Wraps import_file in a process function and sends it to Processor
@@ -138,7 +150,6 @@ class Importer:
             defname: SAM definition name
             file_list: file list path
             branches: Flat list or grouped dict of branches to import
-            use_remote: If accessing the file remotely (/pnfs not mounted)
             max_workers: Maximum number of parallel workers
             
         Returns:
@@ -167,7 +178,6 @@ class Importer:
             return self.import_file(
                 file_name=file_name,
                 branches=branches,
-                use_remote=use_remote,
                 quiet=True
             )
 
