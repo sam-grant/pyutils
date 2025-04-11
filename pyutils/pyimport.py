@@ -1,7 +1,7 @@
 import uproot
 import awkward as ak
-from pyread import Reader
-from pyprocess import Processor
+from pyutils.pyread import Reader
+from pyutils.pyprocess import Processor
 
 class Importer:
     """High-level interface for importing branches from files and datasets"""
