@@ -20,7 +20,7 @@ def example_plotting(filename):
   # Import code and extract branch
   treename = 'trksegs'
   branchname = 'time'
-  surface_id = 0 # tracker entrance FIXME - we need a better way for this
+  surface_id = 1 # tracker middle
   ntuple = test_evn.ImportTree()
   branches = test_evn.ImportBranches(ntuple,[str(treename)])
   

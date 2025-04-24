@@ -20,7 +20,7 @@ def example_multifiles(filelist):
   # import code and extract branch
   treename = 'trksegs'
   branchname = 'time'
-  surface_id = 0 # tracker entrance FIXME - we need a better way for this
+  surface_id = 1 # tracker middle
   branch = myevn.ImportTreeFromFileList(filepath, treename)
 
   # find fit at chosen ID

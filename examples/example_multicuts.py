@@ -42,7 +42,7 @@ def example_multicuts(filename):
   treenames = [ 'trksegs', 'trksegs', 'trksegpars_lh', 'trksegpars_lh', 'trksegpars_lh', 'trksegpars_lh']
   leaves = [ 'sid', 'time', 't0err','maxr','tanDip','d0']
   equals = [True, False, False, False, False, False]
-  v1s = [0, 640, 0, 450, 0.5, -100]
+  v1s = [1, 640, 0, 450, 0.5, -100]
   v2s = [None, 1650, 0.9, 680, 1.0, 100]
   
   # make a list of masks
