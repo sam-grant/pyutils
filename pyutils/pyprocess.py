@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 import os
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -126,7 +127,7 @@ class Processor:
                     # Extract just the base filename for cleaner output
                     base_filename = filename.split('/')[-1]
                     
-                    if self.verbosity > 0:
+                    if self.verbosity > 1:
                         print(f"{self.print_prefix}✅  {base_filename}")
                         print(f"\tProgress: {completed_files}/{total_files} files ({percent_complete:.1f}%)\n")
                     

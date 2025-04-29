@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 import awkward as ak
 
 class Print:
@@ -8,7 +9,8 @@ class Print:
     an Awkward array, handling nested fields and subfields recursively.
     """
     def __init__(self, verbose=False, precision=1):
-        """ Initialise with optional verbose flag 
+        """ Initialise Print
+        
         Args:
             verbose (bool, optional): Print full arrays without truncation. Defaults to False.
             precision (int, optional): Specifiy the number of decimal points when using verbose option. Defaults to 1. 
@@ -16,6 +18,8 @@ class Print:
         self.verbose = verbose  
         self.precision = precision
         self.print_prefix = "[pyprint] "
+
+        print(f"{self.print_prefix}Initialised Print with verbose = {self.verbose} and precision = {self.precision}")
 
     def _set_precision(self, value):
         """

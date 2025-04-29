@@ -34,7 +34,8 @@ class Importer:
         self.print_prefix = "[pyimport] "
         
         # Confirm init
-        print(f"{self.print_prefix}Initialised with path '{dir_name}/{tree_name}' and verbosity={self.verbosity}") 
+        if verbosity > 0:
+            print(f"{self.print_prefix}Initialised Importer with path '{dir_name}/{tree_name}' and verbosity={self.verbosity}") 
         
     def _get_array(self, file_name, branches=None, quiet=False):
     
@@ -60,7 +61,7 @@ class Importer:
                 result = {}
 
                 if branches is None: 
-                    print(f"{self.print_prefix}❌  Please provide a list of branches, or branches='*' to import all") 
+                    print(f"{self.print_prefix}❌ Please provide a list of branches, or branches='*' to import all") 
                     return None
         
                 # Flat list
@@ -94,11 +95,11 @@ class Importer:
                 return result
                 
             else:
-                print(f"{self.print_prefix}❌  Could not find tree {self.dir_name}/{self.tree_name} in file {file_name}")
+                print(f"{self.print_prefix}❌ Could not find tree {self.dir_name}/{self.tree_name} in file {file_name}")
                 return None
     
         except Exception as e:
-            print(f"{self.print_prefix}❌  Error getting branches in file {file_name}: {e}")
+            print(f"{self.print_prefix}❌ Error getting branches in file {file_name}: {e}")
             return None
     
     def import_file(self, file_name, branches=None, quiet=False): 
@@ -118,7 +119,8 @@ class Importer:
             use_remote=self.use_remote,
             location=self.location,
             schema=self.schema,
-            verbosity=self.verbosity)
+            verbosity=0 # Reduce verbosity for multiprocess
+        )
 
         # Result container
         result = {}
@@ -127,17 +129,17 @@ class Importer:
         result = self._get_array(
             file_name,
             branches=branches,
-            quiet=quiet
+            quiet=quiet # Reduce verbosity for multiprocess
         )
         
         if result is not None:
             if self.verbosity > 0 and not quiet:
-                print(f"{self.print_prefix}✅  Imported branches")
+                print(f"{self.print_prefix}✅ Imported branches")
             if self.verbosity > 1 and not quiet:
                 print(f"{self.print_prefix} Array structure:")
                 result.type.show()
         else:
-            print(f"{self.print_prefix}❌  Failed to import branches")
+            print(f"{self.print_prefix}❌ Failed to import branches")
             
         return result
 
@@ -158,7 +160,7 @@ class Importer:
 
         # Check inputs
         if bool(defname is None) == bool(file_list_path is None): # Both None or both have values
-            print(f"{self.print_prefix}❌  Please provide exactly one of 'defname' or 'file_list'")
+            print(f"{self.print_prefix}❌ Please provide exactly one of 'defname' or 'file_list'")
             return None
 
         # Initialise processor 
@@ -193,14 +195,14 @@ class Importer:
 
         if result is not None:
             if self.verbosity > 0:
-                print(f"{self.print_prefix}✅  Returning concatenated array containing {len(result)} events")
+                print(f"{self.print_prefix}✅ Returning concatenated array containing {len(result)} events")
             if self.verbosity > 1:
-                print(f"{self.print_prefix} Array structure:")
+                print(f"{self.print_prefix}Array structure:")
                 result.type.show()
         else:
             print(f"{self.print_prefix}❌ Concatenated array is None: failed to import branches")
         
         if len(result) == 0:
-            print(f"{self.print_prefix}⚠️  No events found in array")
+            print(f"{self.print_prefix}⚠️ No events found in array")
             
         return result

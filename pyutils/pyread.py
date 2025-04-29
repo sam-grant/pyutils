@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 import uproot
 import subprocess
 
@@ -47,10 +48,10 @@ class Reader:
         try: 
             file = uproot.open(file_path)
             if self.verbosity > 0:
-                print(f"{self.print_prefix}✅  Opened {file_path}")
+                print(f"{self.print_prefix}✅ Opened {file_path}")
             return file
         except Exception as e:
-            raise Exception(f"{self.print_prefix}❌  Exception while opening {file_path}: {e}") from e
+            raise Exception(f"{self.print_prefix}❌ Exception while opening {file_path}: {e}") from e
     
     def _read_remote_file(self, file_path, location="tape", schema="root"):
         """Open a file from /pnfs via xroot"""
@@ -70,7 +71,7 @@ class Reader:
             
         except Exception as e1:
             # If there's an error, try copying to local and opening
-            print(f"{self.print_prefix}❌  Exception while opening {file_path}: {e1}")
+            print(f"{self.print_prefix}❌ Exception while opening {file_path}: {e1}")
             print(f"{self.print_prefix}Retrying with local copy...")
 
             try:
@@ -84,4 +85,4 @@ class Reader:
                 return self._read_local_file(file_path)
             
             except Exception as e2:
-                raise Exception(f"{self.print_prefix}❌  Failed to open local copy: {e2}") from e2
+                raise Exception(f"{self.print_prefix}❌ Failed to open local copy: {e2}") from e2
