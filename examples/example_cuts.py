@@ -27,8 +27,8 @@ def main():
   # check if fit is going down stream
   is_down = mysel.isDownstream(trksegs)
 
-  # is trk entrance
-  trkent_mask = (trksegs['trksegs']['sid']==0)
+  # is trk middle
+  trkent_mask = (trksegs['trksegs']['sid']==1) 
   
   # is in time
   trksegs_mask = (trksegs['trksegs']['time'] > 640) & (trksegs['trksegs']['time'] < 1650)

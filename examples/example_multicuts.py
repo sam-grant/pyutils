@@ -1,16 +1,20 @@
 #! /usr/bin/env python
+import sys
+sys.path.append("../../utils/pyutils")
+
 import pyimport as evn
 import pyvector as vec
 import pyplot as plot
 import pyprint as prnt
 from pyselect import Select as slct
-import awkward as ak
 
-def main():
+import awkward as ak
+import argparse
+def example_multicuts(filename):
   """ simple test function to run some of the utils """
 
   # import the files
-  test_evn = evn.Import("/exp/mu2e/data/users/sophie/ensembles/MDS1/MDS1av2.root", "EventNtuple", "ntuple")
+  test_evn = evn.Import(str(filename), "EventNtuple", "ntuple")
 
   # import code and extract branch
   ntuple = test_evn.ImportTree()
@@ -38,7 +42,7 @@ def main():
   treenames = [ 'trksegs', 'trksegs', 'trksegpars_lh', 'trksegpars_lh', 'trksegpars_lh', 'trksegpars_lh']
   leaves = [ 'sid', 'time', 't0err','maxr','tanDip','d0']
   equals = [True, False, False, False, False, False]
-  v1s = [0, 640, 0, 450, 0.5, -100]
+  v1s = [1, 640, 0, 450, 0.5, -100]
   v2s = [None, 1650, 0.9, 680, 1.0, 100]
   
   # make a list of masks
@@ -66,6 +70,13 @@ def main():
   
   dictarrays = { "all dem" : flatarraymom_all, "dem + trkcuts" : flatarraymom_cut }
   myhist.Plot1DOverlay(dictarrays, 100, 95,115, "Mu2e Example", "fit mom at Trk Ent [ns]", "#events per bin", 'momcutcompare.pdf', 'best', 300,False, True, True)
+
+def main(args):
+  example_multicuts(args.filename)
   
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description='command arguments', formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument("--filename", type=str, default="/exp/mu2e/data/users/sophie/ensembles/MDS1/MDS1av0.root", help="filename")
+    args = parser.parse_args()
+    (args) = parser.parse_args()
+    main(args)
