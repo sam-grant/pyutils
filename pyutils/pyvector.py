@@ -46,7 +46,7 @@ class Vector:
             try:
                 vector = ak.zip({
                     "x": branch[f"{vector_name}.fCoordinates.fX"],
-                    "y": branch[f"{vector_name}.fCoordinates.fX"],
+                    "y": branch[f"{vector_name}.fCoordinates.fY"],
                     "z": branch[f"{vector_name}.fCoordinates.fZ"],
                 }, with_name="Vector3D")
             except Exception as e:
