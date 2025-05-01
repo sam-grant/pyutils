@@ -215,7 +215,7 @@ class Select:
         """ Return boolean array for tracks above a specified quality   
 
         Args: 
-            data (awkward.Array): Input array containing the trkqual.resutl branch
+            data (awkward.Array): Input array containing the trkqual.result branch
             quality (float): The numerical output of the MVA
 
         """

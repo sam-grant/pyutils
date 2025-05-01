@@ -1,6 +1,6 @@
 # `pyutils`: Mu2e Python utilities
 
-`pyutils` is a suite of tools intended for Python-based analyses of Mu2e data, particulary `EventNtuple`. We use packages available in the standard Mu2e Python environment and provide functionality that will be common to many Mu2e analysis groups. The goal is to minimise the amount of overhead required when setting up an analysis.  
+`pyutils` is a suite of tools intended for Python-based analyses of Mu2e data, particularly `EventNtuple`. We use packages available in the standard Mu2e Python environment and provide functionality that will be common to many Mu2e analysis groups. The goal is to minimise the amount of overhead required when setting up an analysis.  
 
 ## 1. Setting up 
 
@@ -13,7 +13,7 @@ Setting up involves two simple steps:
 
 `pyutils` is designed to work with packages installed in the Mu2e Python environment, which is currently maintained by the L4 for Analysis Interfaces, Sam Grant.
 
-To activate the environment, first run `mu2einit` and and then **one** `pyenv` command, like
+To activate the environment, first run `mu2einit` and then **one** `pyenv` command, like
 
 ```
 mu2einit # or "source /cvmfs/mu2e.opensciencegrid.org/setupmu2e-art.sh"
