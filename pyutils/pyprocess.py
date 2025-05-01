@@ -31,7 +31,7 @@ class Processor:
         if file_list_path:
             try:
                 if not os.path.exists(file_list_path):
-                    print(f"{self.print_prefix}❌  File list path does not exist: {file_list_path}")
+                    print(f"{self.print_prefix}❌ File list path does not exist: {file_list_path}")
                     return []
 
                 if self.verbosity > 1:
@@ -43,12 +43,12 @@ class Processor:
                 file_list = [line.strip() for line in file_list if line.strip()]
 
                 if file_list and self.verbosity > 0:
-                    print(f"{self.print_prefix}✅  Successfully loaded file list\n\tPath: {file_list_path}\n\tCount: {len(file_list)} files")
+                    print(f"{self.print_prefix}✅ Successfully loaded file list\n\tPath: {file_list_path}\n\tCount: {len(file_list)} files")
                 
                 return file_list
                 
             except Exception as e:
-                print(f"{self.print_prefix}❌  Error reading file list from {file_list_path}: {e}")
+                print(f"{self.print_prefix}❌ Error reading file list from {file_list_path}: {e}")
                 return []
         
         # Otherwise, try to use the SAM definition
@@ -66,17 +66,17 @@ class Processor:
                 file_list = [line for line in file_list_output.splitlines() if line]
 
                 if file_list and self.verbosity > 0:
-                    print(f"{self.print_prefix}✅  Successfully loaded file list\n\tSAM definition: {defname}\n\tCount: {len(file_list)} files")
+                    print(f"{self.print_prefix}✅ Successfully loaded file list\n\tSAM definition: {defname}\n\tCount: {len(file_list)} files")
                 
                 # Return the file list
                 return file_list
                 
             except Exception as e:
-                print(f"{self.print_prefix}❌  Exception while getting file list for {defname}: {e}")
+                print(f"{self.print_prefix}❌ Exception while getting file list for {defname}: {e}")
                 return []
         
         else:
-            print(f"{self.print_prefix}❌  Error: Either 'defname' or 'file_list_path' must be provided")
+            print(f"{self.print_prefix}❌ Error: Either 'defname' or 'file_list_path' must be provided")
             return []        
 
     def process_files_parallel(self, file_list, process_func, max_workers=None):
@@ -92,7 +92,7 @@ class Processor:
         """
         
         if not file_list:
-            print(f"{self.print_prefix}❌  Warning: Empty file list provided")
+            print(f"{self.print_prefix}❌ Warning: Empty file list provided")
             return None
             
         if max_workers is None:
@@ -128,14 +128,14 @@ class Processor:
                     base_filename = filename.split('/')[-1]
                     
                     if self.verbosity > 1:
-                        print(f"{self.print_prefix}✅  {base_filename}")
+                        print(f"{self.print_prefix}✅ {base_filename}")
                         print(f"\tProgress: {completed_files}/{total_files} files ({percent_complete:.1f}%)\n")
                     
                 except Exception as e:
-                    print(f"{self.print_prefix}❌  Error processing {filename}:\n{e}")
+                    print(f"{self.print_prefix}❌ Error processing {filename}:\n{e}")
 
         # Report completion status
-        print(f"{self.print_prefix}✅  Done: {completed_files}/{total_files} files processsed")
+        print(f"{self.print_prefix}✅ Done: {completed_files}/{total_files} files processsed")
         
         # Return the results
         return results
