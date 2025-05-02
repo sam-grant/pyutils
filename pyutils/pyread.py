@@ -1,6 +1,9 @@
 #! /usr/bin/env python
 import uproot
+import os
 import subprocess
+import _env_manager # Environment manager
+
 
 class Reader:
     """Unified interface for accessing files, either locally or remotely"""
@@ -20,8 +23,12 @@ class Reader:
         self.verbosity = verbosity 
         self.print_prefix = "[pyread] "
 
-        # Check arguments for remote reading
+        # # Setup and validation for remote reading
         if self.use_remote:
+            #  Ensure mdh environment
+            _env_manager.ensure_environment()  
+            
+            # Check arguments
             valid_locations = ["tape", "disk", "scratch", "nersc"]
             if self.location not in valid_locations:
                 print(f"{self.print_prefix}⚠️ Location '{location}' may not be valid. Expected one of {valid_locations}")
@@ -60,14 +67,16 @@ class Reader:
         
         try:
             # Setup commands to generate xroot URL
-            commands = "source /cvmfs/mu2e.opensciencegrid.org/setupmu2e-art.sh; muse setup ops;"
-            commands += f"echo {file_path} | mdh print-url -l {self.location} -s {self.schema} -"
+            # commands = "source /cvmfs/mu2e.opensciencegrid.org/setupmu2e-art.sh; muse setup ops;"
+            # commands = f"echo {file_path} | mdh print-url -l {self.location} -s {self.schema} -"
+            commands = f"mdh print-url {file_path} -l {self.location} -s {self.schema} 2>/dev/null"
             # Execute commands
-            xroot_url = subprocess.check_output(commands, shell=True, universal_newlines=True).strip()
+            with open(os.devnull, "w") as devnull: # Suppress error messages 
+                file_path = subprocess.check_output(commands, shell=True, universal_newlines=True, stderr=devnull).strip()
             if self.verbosity > 1:
-                print(f"{self.print_prefix}Created xroot URL: {xroot_url}")
+                print(f"{self.print_prefix}Created file path: {file_path}")
             # Open the file using the xroot URL
-            return self._read_local_file(xroot_url)
+            return self._read_local_file(file_path)
             
         except Exception as e1:
             # If there's an error, try copying to local and opening
@@ -75,11 +84,13 @@ class Reader:
             print(f"{self.print_prefix}Retrying with local copy...")
 
             try:
-                commands = 'source /cvmfs/mu2e.opensciencegrid.org/setupmu2e-art.sh; muse setup ops;'
-                commands += f'echo {file_path} | mdh copy-file -s tape -l local -'
+                # commands = 'source /cvmfs/mu2e.opensciencegrid.org/setupmu2e-art.sh; muse setup ops;'
+                # commands = f'echo {file_path} | mdh copy-file -s tape -l local -'
+                commands = f'mdh copy-file {file_path} -s tape -l local 2>/dev/null'
                 
                 # Execute the copy command
-                subprocess.check_output(commands, shell=True, universal_newlines=True)
+                with open(os.devnull, "w") as devnull:
+                    subprocess.check_output(commands, shell=True, universal_newlines=True, stderr=devnull)
                 
                 # Open the file directly after copying
                 return self._read_local_file(file_path)

@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import awkward as ak
 import inspect
 import tqdm
+import _env_manager # Environment manager
 from pyimport import Importer # For importing branches
 
 class Processor:
@@ -30,11 +31,14 @@ class Processor:
         self.schema = schema
         self.verbosity = verbosity 
         self.print_prefix = "[pyprocess] "
+        
+        if self.use_remote: #  Ensure mdh environment 
+            _env_manager.ensure_environment()
 
         # Confirm init
         if verbosity > 0:
             # Print out optional args 
-            confirm_str = f"{self.print_prefix}Initialised Processor:\n\tpath = '{self.dir_name}/{self.tree_name}'\n\tuse_remote = {self.use_remote}"
+            confirm_str = f"{self.print_prefix}✅ Initialised Processor:\n\tpath = '{self.dir_name}/{self.tree_name}'\n\tuse_remote = {self.use_remote}"
             if use_remote:
                 confirm_str += f"\n\tlocation = {self.location}\n\tschema = {self.schema}"
             confirm_str += f"\n\tverbosity={self.verbosity}"
@@ -82,11 +86,12 @@ class Processor:
             
             try:
                 # Setup commands for SAM query
-                commands = 'source /cvmfs/mu2e.opensciencegrid.org/setupmu2e-art.sh; muse setup ops;'
-                commands += f"samweb list-files 'defname: {defname} with availability anylocation' | sort -V"
+                # commands = 'source /cvmfs/mu2e.opensciencegrid.org/setupmu2e-art.sh; muse setup ops;'
+                commands = f"samweb list-files 'defname: {defname} with availability anylocation' | sort -V 2>/dev/null"
                 
                 # Execute commands
-                file_list_output = subprocess.check_output(commands, shell=True, universal_newlines=True)
+                with open(os.devnull, "w") as devnull: # Suppress error messages 
+                    file_list_output = subprocess.check_output(commands, shell=True, universal_newlines=True, stderr=devnull)
                 file_list = [line for line in file_list_output.splitlines() if line]
 
                 if file_list and self.verbosity > 0:
@@ -351,7 +356,7 @@ class Skeleton:
         # self.param2 = value2
         
         # Printout marker
-        self.print_prefix = "[Template] "
+        self.print_prefix = "[Skeleton] "
 
         if self.verbosity > 0:
             print(f"{self.print_prefix}✅ Template initialised")
