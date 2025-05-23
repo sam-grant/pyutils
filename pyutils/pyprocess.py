@@ -1,12 +1,16 @@
 #! /usr/bin/env python
 import os
 import subprocess
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 import awkward as ak
 import inspect
 import tqdm
+import gc
 import _env_manager # Environment manager
 from pyimport import Importer # For importing branches
+from pylogger import Logger # Messaging/logging
+
+# TODO: implement failed file handling 
 
 class Processor:
     """Interface for processing files or datasets"""
@@ -17,32 +21,35 @@ class Processor:
         """Initialise the processor
 
         Args:
-            dir_name (str, optional): Ntuple directory in file 
-            tree_name (str, optional): Ntuple name in file directory
-            use_remote (bool, optional): Flag for reading remote files 
-            location (str, optional): Remote files only. File location: tape (default), disk, scratch, nersc 
-            schema (str, optional): Remote files only. Schema used when writing the URL: root (default), http, path, dcap, samFile
-            verbosity (int, optional): Print detail level (0: minimal, 1: medium, 2: maximum) 
+            dir_name (str, opt): Ntuple directory in file 
+            tree_name (str, opt): Ntuple name in file directory
+            use_remote (bool, opt): Flag for reading remote files 
+            location (str, opt): Remote files only. File location: tape (default), disk, scratch, nersc 
+            schema (str, opt): Remote files only. Schema used when writing the URL: root (default), http, path, dcap, samFile
+            verbosity (int, opt): Level of output detail (0: errors only, 1: info, warnings, 2: max)
         """
         self.dir_name = dir_name
         self.tree_name = tree_name
         self.use_remote = use_remote
         self.location = location
         self.schema = schema
-        self.verbosity = verbosity 
-        self.print_prefix = "[pyprocess] "
+        self.verbosity = verbosity
+
+        self.logger = Logger( # Start logger
+            print_prefix = "[pyprocess]", 
+            verbosity = verbosity
+        )
         
         if self.use_remote: #  Ensure mdh environment 
             _env_manager.ensure_environment()
 
-        # Confirm init
-        if verbosity > 0:
-            # Print out optional args 
-            confirm_str = f"{self.print_prefix}✅ Initialised Processor:\n\tpath = '{self.dir_name}/{self.tree_name}'\n\tuse_remote = {self.use_remote}"
-            if use_remote:
-                confirm_str += f"\n\tlocation = {self.location}\n\tschema = {self.schema}"
-            confirm_str += f"\n\tverbosity={self.verbosity}"
-            print(confirm_str) 
+        # Print out optional args 
+        confirm_str = f"Initialised Processor:\n\tpath = '{self.dir_name}/{self.tree_name}'\n\tuse_remote = {self.use_remote}"
+        if use_remote:
+            confirm_str += f"\n\tlocation = {self.location}\n\tschema = {self.schema}"
+        confirm_str += f"\n\tverbosity={self.verbosity}"
+
+        self.logger.log(confirm_str, "info")
 
     def get_file_list(self, defname=None, file_list_path=None):
         """Utility to get a list of files from a SAM definition OR a text file
@@ -59,76 +66,80 @@ class Processor:
         if file_list_path:
             try:
                 if not os.path.exists(file_list_path):
-                    print(f"{self.print_prefix}❌ File list path does not exist: {file_list_path}")
+                    self.logger.log(f"File list path does not exist: {file_list_path}", "error")
                     return []
-
-                if self.verbosity > 1:
-                     print(f"{self.print_prefix}Loading file list from {file_list_path}") 
                     
+                self.logger.log(f"Loading file list from {file_list_path}", "info")
+                
                 with open(file_list_path, "r") as file_list:
                     file_list = file_list.readlines()
                     
                 file_list = [line.strip() for line in file_list if line.strip()]
 
-                if file_list and self.verbosity > 0:
-                    print(f"{self.print_prefix}✅ Successfully loaded file list\n\tPath: {file_list_path}\n\tCount: {len(file_list)} files")
+                if (len(file_list) > 0):
+                    self.logger.log(f"Successfully loaded file list\n\tPath: {defname}\n\tCount: {len(file_list)} files", "success")
+                else: 
+                    self.logger.log(f"File list has length {len(file_list)}", "warning")
                 
                 return file_list
                 
             except Exception as e:
-                print(f"{self.print_prefix}❌ Error reading file list from {file_list_path}: {e}")
+                self.logger.log(f"Error reading file list from {file_list_path}: {e}", "error")
                 return []
         
         # Otherwise, try to use the SAM definition
         elif defname:
-            if self.verbosity > 1:
-                print(f"{self.print_prefix}Loading file list for SAM definition: {defname}")
+            
+            self.logger.log(f"Loading file list for SAM definition: {defname}", "max")
             
             try:
                 # Setup commands for SAM query
-                # commands = 'source /cvmfs/mu2e.opensciencegrid.org/setupmu2e-art.sh; muse setup ops;'
                 commands = f"samweb list-files 'defname: {defname} with availability anylocation' | sort -V 2>/dev/null"
                 
                 # Execute commands
-                with open(os.devnull, "w") as devnull: # Suppress error messages 
-                    file_list_output = subprocess.check_output(commands, shell=True, universal_newlines=True, stderr=devnull)
+                file_list_output = subprocess.check_output(commands, shell=True, universal_newlines=True, stderr=subprocess.DEVNULL) 
                 file_list = [line for line in file_list_output.splitlines() if line]
 
-                if file_list and self.verbosity > 0:
-                    print(f"{self.print_prefix}✅ Successfully loaded file list\n\tSAM definition: {defname}\n\tCount: {len(file_list)} files")
-                
+                if (len(file_list) > 0):
+                    self.logger.log(f"Successfully loaded file list\n\tSAM definition: {defname}\n\tCount: {len(file_list)} files", "success")
+                else: 
+                    self.logger.log(f"File list has length {len(file_list)}", "warning")
+                    
                 # Return the file list
                 return file_list
-                
+                    
             except Exception as e:
-                print(f"{self.print_prefix}❌ Exception while getting file list for {defname}: {e}")
+                self.logger.log(f"Exception while getting file list for {defname}: {e}", "error")
                 return []
         
         else:
-            print(f"{self.print_prefix}❌ Error: Either 'defname' or 'file_list_path' must be provided")
+            self.logger.log("Error: Either 'defname' or 'file_list_path' must be provide", "error")
             return []  
 
-    def _process_files_parallel(self, file_list, process_func, max_workers=None):
+    def _process_files_parallel(self, file_list, process_func, max_workers=None, use_processes=False):
         """Internal function to parallelise file operations with given a process function
         
         Args:
             file_list: List of files to process
             process_func: Function to call for each file (must accept file name as first argument)
             max_workers: Maximum number of worker threads
-            
+            use_processes (bool, optional): Use process pool rather than thread pool 
         Returns:
             List of results from each processed file
         """
         
         if not file_list:
-            print(f"{self.print_prefix}❌ Warning: Empty file list provided")
+            self.logger.log("Error: Empty file list provided", "error")
             return None
-            
+    
         if max_workers is None:
             # Return a sensible default for max threads
-            max_workers = min(len(file_list), 2*os.cpu_count() or 4) 
+            max_workers = min(len(file_list), 2*os.cpu_count() or 4) # FIXME: sensible for threads, not processes
 
-        print(f"{self.print_prefix}Starting processing on {len(file_list)} files with {max_workers} workers")
+        ExecutorClass = ProcessPoolExecutor if use_processes else ThreadPoolExecutor
+        executor_type = "processes" if use_processes else "threads"
+        
+        self.logger.log(f"Starting processing on {len(file_list)} files with {max_workers} {executor_type}", "info")
 
         # Store results in a list
         results = []  
@@ -140,22 +151,18 @@ class Processor:
 
         # Set up tqdm format and styling
         bar_format = "{desc}: {percentage:3.0f}%|{bar:30}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]"
-        # bar_format = "{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}, Successful={postfix[successful]}, Failed={postfix[failed]}]"
-        # bar_format = "{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}, Successful={postfix[successful]}, Failed={postfix[failed]}]"
 
-        # Create progress bar with tqdm
-        # with tqdm.tqdm(total=total_files, desc="Processor", unit="file") as pbar:
         with tqdm.tqdm(
             total=total_files, 
             desc="Processing",
             unit="file",
             bar_format=bar_format,
             colour="green",
-            ncols=100  # Fixed width for better appearance
+            ncols=150 
         ) as pbar:
             
             # Start thread pool executor
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            with ExecutorClass(max_workers=max_workers) as executor:
                 # Create futures for each file processing task
                 futures = {executor.submit(process_func, file_name): file_name for file_name in file_list}
                 
@@ -169,41 +176,33 @@ class Processor:
                             completed_files += 1
                         else: 
                             failed_files += 1
-                            
-                        # percent_complete = (completed_files / total_files) * 100
                         
                         # Extract just the base filename for cleaner output
                         base_file_name = file_name.split('/')[-1]
                         
-                        # if self.verbosity > 1:
-                        #     print(f"{self.print_prefix}✅ {base_file_name}")
-                        #     print(f"\tProgress: {completed_files}/{total_files} files ({percent_complete:.1f}%)\n")
-                        
                     except Exception as e:
-                        print(f"{self.print_prefix}❌ Error processing {file_name}:\n{e}")
+                        self.logger.log(f"Error processing {file_name}:\n{e}", "error")
                         # Redraw progress bar
                         pbar.refresh()
 
                     finally:
                         # Always update the progress bar, regardless of success or failure
                         pbar.update(1)
-                        # Optionally update progress bar description with success/failure counts
-                        # if self.verbosity > 0:
                         # Update postfix with stats
                         pbar.set_postfix({
-                            "succesful": completed_files, 
-                            "failed": failed_files #,
-                            # "success rate": f"{(completed_files/max(1, completed_files+failed_files))*100:.1f}%"
+                            "successful": completed_files, 
+                            "failed": failed_files 
                         })
-
-        # Report completion status
-        # print(f"{self.print_prefix}✅ Done: {completed_files}/{total_files} files processsed")
+                
+                # Clean up
+                del futures
+                gc.collect()
         
         # Return the results
         return results
 
     # custom_process_func -> process_func?
-    def process_data(self, file_name=None, file_list_path=None, defname=None, branches=None, max_workers=None, custom_process_func=None):
+    def process_data(self, file_name=None, file_list_path=None, defname=None, branches=None, max_workers=None, custom_process_func=None, use_processes=False):
         """Process the data 
         
         Args:
@@ -213,6 +212,7 @@ class Processor:
             branches: Flat list or grouped dict of branches to import
             max_workers: Maximum number of parallel workers
             custom_process_func: Optional custom processing function for each file 
+            use_processes: Whether to use processes rather than threads
             
         Returns:
             - If custom_process_func is None: a concatenated awkward array with imported data from all files
@@ -222,24 +222,25 @@ class Processor:
         # Check that we have one type of file argument 
         file_sources = sum(x is not None for x in [file_name, defname, file_list_path])
         if file_sources != 1: 
-            print(f"{self.print_prefix}❌ Please provide exactly one of 'file_name', 'file_list_path', or defname'")
+            self.logger.log(f"Please provide exactly one of 'file_name', 'file_list_path', or defname'", "error")
             return None
 
         # Validate custom_process_func if provided
         if custom_process_func is not None:
             # Check if it's callable
             if not callable(custom_process_func):
-                print(f"{self.print_prefix}❌ custom_process_func is not callable")
+                self.logger.log(f"custom_process_func is not callable", "error")
                 return None
                 
             # Check function signature
             sig = inspect.signature(custom_process_func)
             if len(sig.parameters) != 1:
-                print(f"{self.print_prefix}❌ custom_process_func must take exactly one argument (file_name)")
+                self.logger.log(f"custom_process_func must take exactly one argument (file_name)", "error")
                 return None        
 
         # Verbosity for worker threads is the same as Processor 
         worker_verbosity = self.verbosity 
+        
         # Unless we have multiple files
         if file_name is None:
             worker_verbosity = 0
@@ -269,10 +270,10 @@ class Processor:
             try: 
                 result = process_func(file_name) # Run the process
                 if self.verbosity > 0:
-                    print(f"{self.print_prefix}✅ Returning result from process on {file_name}")
+                    self.logger.log(f"Returning result from process on {file_name}", "success")
                 return result 
             except Exception as e:
-                print(f"{self.print_prefix}❌ Error processing {file_name}:\n{e}")
+                self.logger.log(f"Error processing {file_name}:\n{e}", "error")
                 return None
             
         # Now handle multiple files
@@ -288,26 +289,25 @@ class Processor:
         results = self._process_files_parallel(
             file_list,
             process_func,
-            max_workers=max_workers
+            max_workers=max_workers,
+            use_processes=use_processes
         )
 
         if len(results) == 0:
-            print(f"{self.print_prefix}⚠️ Results list has length zero")
+            self.logger.log(f"Results list has length zero", "warning")
 
         if custom_process_func is None:
             # Concatenate the arrays
             results = ak.concatenate(results)
             if results is not None:
-                if self.verbosity > 0:
-                    print(f"{self.print_prefix}✅ Returning concatenated array containing {len(results)} events")
-                if self.verbosity > 1:
-                    print(f"{self.print_prefix}Array structure:")
+                self.logger.log(f"Returning concatenated array containing {len(results)} events", "success")
+                self.logger.log(f"Array structure:", "max")
+                if self.verbosity > 2:
                     results.type.show()
             else:
-                print(f"{self.print_prefix}❌ Concatenated array is None: failed to import branches")
+                self.logger.log(f"Concatenated array is None (failed to import branches)", "error")
         else: 
-            if self.verbosity > 0:
-                print(f"{self.print_prefix}✅ Returning list of {len(results)} result from custom process function")
+            self.logger.log(f"Returning {len(results)} results", "info")
 
         return results
 
@@ -328,10 +328,14 @@ class Skeleton:
     5. Override methods as needed
     """
     
-    def __init__(self):
+    def __init__(self, verbosity=1):
         """Initialise your file processor with configuration parameters
         
         Customise this method to include parameters specific to your analysis.
+
+        Args: 
+            verbosity (int, opt): Level of output detail (0: errors only, 1: info, 2: debug, 3: max)
+        
         """
         # File source configuration
         self.file_list_path = None  # Path to a text file with file paths
@@ -347,19 +351,21 @@ class Skeleton:
         self.schema = "root"        # URL schema for remote files
         
         # Processing configuration
-        self.verbosity = 1          # Print detail level (0=minimal, 1=medium, 2=maximum)
         self.max_workers = None     # Number of parallel workers (None=auto)
-        
+        self.use_processes = False  # Whether to use processes rather than threads 
+        self.verbosity = verbosity
         # Analysis-specific configuration
         # Add your own parameters here!
         # self.param1 = value1
         # self.param2 = value2
-        
-        # Printout marker
-        self.print_prefix = "[Skeleton] "
 
-        if self.verbosity > 0:
-            print(f"{self.print_prefix}✅ Template initialised")
+        # Start logger
+        self.logger = Logger( 
+            print_prefix = "[Skeleton]", 
+            verbosity = verbosity
+        )
+
+        self.logger.log("Skeleton init", "info")
         
         
     def process_file(self, file_name):
@@ -375,10 +381,8 @@ class Skeleton:
             Any data structure representing the processed result
         """
         try:
-            # Create an Importer for this file
-            importer = Importer(
-                file_name=file_name,
-                branches=self.branches,
+            # Create a fresh Processor for this file
+            local_processor = Processor(
                 dir_name=self.dir_name,
                 tree_name=self.tree_name,
                 use_remote=self.use_remote,
@@ -388,11 +392,14 @@ class Skeleton:
             )
             
             # Import the data
-            data = importer.import_branches()
+            data = local_processor.process_data(
+                file_name=file_name,
+                branches=self.branches
+            )
             
             # Check if import was successful
             if data is None:
-                print(f"{self.print_prefix}Failed to import data from {file_name}")
+                self.logger.log(f"Failed to import data from {file_name}", "error")
                 return None
                 
             # Example processing - REPLACE WITH YOUR OWN LOGIC
@@ -401,11 +408,11 @@ class Skeleton:
                 "file_name": file_name,
                 "event_count": len(data[self.branches[0]]) if self.branches else 0
             }
-            
+
             return result
             
         except Exception as e:
-            print(f"{self.print_prefix}Error processing {file_name}: {e}")
+            self.logger.log(f"Error processing {file_name}: {e}", "error")
             return None
             
     def execute(self):
@@ -415,16 +422,12 @@ class Skeleton:
             Combined results from all processed files
         """
 
-        if self.verbosity > 0:
-            print(f"{self.print_prefix}Starting analysis")
+        self.logger.log(f"Starting analysis", "info")
         
         # Input validation
         file_sources = sum(x is not None for x in [self.file_name, self.file_list_path, self.defname])
         if file_sources != 1:
-            print(f"{self.print_prefix} Please provide exactly one of 'file_name', 'file_list_path', or defname'")
-            return None
-        elif file_sources > 1:
-            print(f"{self.print_prefix}Error: Multiple file sources specified. Use only one of: file_name, file_list_path, or defname.")
+            self.logger.log(f"Please provide exactly one of 'file_name', 'file_list_path', or defname'", "error")
             return None
             
         # Initialise the processor
@@ -439,15 +442,23 @@ class Skeleton:
         
         # Process the data
         results = processor.process_data(
-            file_name=self.file_name,
+            file_name=self.file_name, # If it's just one file it will skip the process function
             file_list_path=self.file_list_path,
             defname=self.defname,
             branches=self.branches,
             max_workers=self.max_workers,
-            custom_process_func=self.process_file
+            custom_process_func=self.process_file,
+            use_processes=self.use_processes 
         )
 
-        if self.verbosity > 0:
-            print(f"{self.print_prefix}✅ Analysis complete")
+        self.logger.log(f"Analysis complete", "success")
             
         return results
+
+    def process_results(self): 
+        """Run post processing on the results list 
+        """
+        pass
+
+        # Such as combination 
+        
