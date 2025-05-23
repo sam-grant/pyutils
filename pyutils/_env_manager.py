@@ -1,45 +1,73 @@
 # Sam Grant 2025 
-# Internal helper to set up paths needed for mdh file tools
+# Internal helper to set up the environment 
 
-#! /usr/bin/env python
 import os
 import subprocess
+from pylogger import Logger
 
-# Global variable to track if environment is set up
-_ENV_IS_SETUP = False
+ENV_IS_SETUP = False
 
 def setup_environment():
     """Set up the environment variables once per process"""
-    global _ENV_IS_SETUP
-
-    print_prefix = "[pyutils] "
-
+    global ENV_IS_SETUP
     
-    if not _ENV_IS_SETUP:
-
-        print(f"{print_prefix}Setting environment variables for this process...")
-
+    logger = Logger(print_prefix="[pyutils]")
+    
+    if not ENV_IS_SETUP:
+        logger.log("Setting up...", "info")
         try:
+            # Step 0: unset the X509_USER_PROXY in the current process 
+            if 'X509_USER_PROXY' in os.environ:
+                del os.environ['X509_USER_PROXY']
             
-            # Run the setup commands and capture the resulting environment
-            commands = "source /cvmfs/mu2e.opensciencegrid.org/setupmu2e-art.sh 2>/dev/null; muse setup ops 2>/dev/null; env"
-            with open(os.devnull, "w") as devnull: # Suppress error messages 
-                result = subprocess.check_output(commands, shell=True, universal_newlines=True, stderr=devnull)
+            # Step 1: Get token
+            token_cmd = "/cvmfs/mu2e.opensciencegrid.org/bin/getToken"
+            logger.log(f"Running: {token_cmd}", "max")
             
-            # Parse the environment variables from the result
+            # Capture both stdout and stderr for debugging
+            token_result = subprocess.run(
+                token_cmd, 
+                shell=True, 
+                capture_output=True, 
+                text=True,
+                env=os.environ.copy()  # Use current environment
+            )
+            
+            if token_result.returncode != 0:
+                logger.log(f"getToken failed: {token_result.stderr}", "error")
+                return False
+                
+            # Step 2: Setup mu2e environment and get all environmentals
+            setup_cmd = "source /cvmfs/mu2e.opensciencegrid.org/setupmu2e-art.sh; muse setup ops; env"
+            
+            result = subprocess.check_output(
+                setup_cmd, 
+                shell=True, 
+                universal_newlines=True,
+                env=os.environ.copy(),  # Use current environment with token
+                stderr=subprocess.DEVNULL # Suppress error messages. FIXME: use mdh directly if you can
+            )
+            
+            # Parse and set environment variables
             for line in result.strip().split('\n'):
                 if '=' in line:
                     key, value = line.split('=', 1)
                     os.environ[key] = value
             
-            _ENV_IS_SETUP = True
-            print(f"{print_prefix}✅ Environment variables set")
-
+            ENV_IS_SETUP = True
+            logger.log("Ready", "success")
+            return True
+            
         except subprocess.CalledProcessError as e:
-            print(f"{print_prefix}❌ Failed to set environment variables: {e}")
+            logger.log(f"Failed to set environment variables: {e}", "error")
             return False
+        except Exception as e:
+            logger.log(f"Unexpected error: {e}", "error")
+            return False
+    
+    return True
 
 def ensure_environment():
     """Ensure environment is set up before using mdh"""
-    if not _ENV_IS_SETUP:
+    if not ENV_IS_SETUP:
         setup_environment()
