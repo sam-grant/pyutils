@@ -17,8 +17,8 @@ def setup_environment():
         logger.log("Setting up...", "info")
         try:
             # Step 0: unset the X509_USER_PROXY in the current process 
-            if 'X509_USER_PROXY' in os.environ:
-                del os.environ['X509_USER_PROXY']
+            if "X509_USER_PROXY" in os.environ:
+                del os.environ["X509_USER_PROXY"]
             
             # Step 1: Get token
             token_cmd = "/cvmfs/mu2e.opensciencegrid.org/bin/getToken"
