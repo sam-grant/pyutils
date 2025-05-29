@@ -15,7 +15,7 @@ class Reader:
             use_remote (bool, opt): Whether to use remote access methods
             location (str, opt): File location for remote files: tape (default), disk, scratch, nersc 
             schema (str, opt): Schema for remote file path: root (default), http, path , dcap, samFile
-            verbosity (int, opt): Level of output detail (0: errors only, 1: info, 2: debug, 3: max)
+            verbosity (int, opt): Level of output detail (0: errors only, 1: info & warnings, 2: max)
         """
         self.use_remote = use_remote # access files from outside NFS
         self.location = location
