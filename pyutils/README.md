@@ -733,8 +733,9 @@ CLASSES
 Helper module for managing printouts across the `pyutils` suite.
 
 
-<summary><strong>Click for details<strong></summary>
 <details>
+<summary><strong>Click for details<strong></summary>
+
     
 ```
 NAME
