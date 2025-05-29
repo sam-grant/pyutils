@@ -302,7 +302,7 @@ class Processor:
             if results is not None:
                 self.logger.log(f"Returning concatenated array containing {len(results)} events", "success")
                 self.logger.log(f"Array structure:", "max")
-                if self.verbosity > 2:
+                if self.verbosity > 1:
                     results.type.show()
             else:
                 self.logger.log(f"Concatenated array is None (failed to import branches)", "error")
