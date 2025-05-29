@@ -42,13 +42,14 @@ class Tester:
         )
         self.logger.log("Initialised", "success")
     
-    def _safe_test(self, test_name, test_function, *args, **kwargs):
+    def _safe_test(self, test_name, test_function, *args, expect_return=True, **kwargs):
         """Wrapper to safely run tests and count errors"""
         self.test_count += 1
         try:
             self.logger.log(f"Running test: {test_name}", "test")
             result = test_function(*args, **kwargs)
-            if result is None or (hasattr(result, '__len__') and len(result) == 0):
+            
+            if expect_return and (result is None or (hasattr(result, '__len__') and len(result) == 0)):
                 self.logger.log(f"FAILED: {test_name}: returned no results", "error")
                 self.error_count += 1
                 self.failed_tests.append(test_name)
@@ -254,20 +255,135 @@ class Tester:
 
         if advanced_multifile:
             self._safe_test("pyprocess:Skeleton (advanced multithread)", self._advanced_multithread)
+
+    ###### pyselect ######
+
+    def _is_electron(self, selector, data):
+        return selector.is_electron(data)
+        
+    def _is_positron(self, selector, data):
+        return selector.is_positron(data)
+
+    def _is_mu_minus(self, selector, data):
+        return selector.is_mu_minus(data)
+
+    def _is_mu_plus(self, selector, data):
+        return selector.is_mu_plus(data)
+
+    def _is_particle(self, selector, data):
+        return selector.is_particle(data, "e-") 
+        
+    def _is_upstream(self, selector, data):
+        return selector.is_upstream(data) 
+
+    def _is_downstream(self, selector, data):
+        return selector.is_downstream(data) 
+
+    def _is_reflected(self, selector, data):
+        return selector.is_reflected(data) 
+
+    def _select_trkqual(self, selector, data):
+        return selector.select_trkqual(data, quality=0.5) 
+
+    def _has_n_hits(self, selector, data):
+        return selector.has_n_hits(data, n_hits=1) 
+        
+    def _test_select(
+        self,
+        particle_masks=True,
+        momentum_masks=True,
+        trk_masks=True
+    ):
+        # Get data
+        processor = Processor(verbosity=0)
+        data = processor.process_data(
+            file_name=self.local_file_path,
+            branches={
+                "v" : [ "trk.pdg", "trk.nactive", "trkqual.result"], # vectors
+                "vov" : [ "trksegs" ] # vector of vectors
+            }
+        )
+        # Get selector
+        selector = Select(verbosity=self.verbosity)
+
+        if particle_masks:
+            self._safe_test("pyselect:Selector:is_electron (local, single file)", self._is_electron, selector, data["v"])
+            self._safe_test("pyselect:Selector:is_positron (local, single file)", self._is_positron, selector, data["v"])
+            self._safe_test("pyselect:Selector:is_mu_minus (local, single file)", self._is_mu_minus, selector, data["v"])
+            self._safe_test("pyselect:Selector:is_mu_plus (local, single file)", self._is_mu_plus, selector, data["v"])
+            self._safe_test("pyselect:Selector:is_particle (local, single file)", self._is_particle, selector, data["v"])
+
+        if momentum_masks:
+            self._safe_test("pyselect:Selector:is_upstream (local, single file)", self._is_upstream, selector, data["vov"])
+            self._safe_test("pyselect:Selector:is_downstream (local, single file)", self._is_downstream, selector, data["vov"])
+            self._safe_test("pyselect:Selector:is_reflected (local, single file)", self._is_reflected, selector, data["vov"])
+
+        if trk_masks: 
+            self._safe_test("pyselect:Selector:select_trkqual (local, single file)", self._select_trkqual, selector, data["v"])
+            self._safe_test("pyselect:Selector:has_n_hits (local, single file)", self._has_n_hits, selector, data["v"])
+            
+    ###### pyprint ######   
     
-    # ###### Add more test methods for other modules ######
+    def _normal_print(self, data):
+        printer = Print()
+        return printer.print_n_events(data)
+        
+    def _verbose_print(self, data):
+        printer = Print(verbose=True)
+        return printer.print_n_events(data)
+
+    def _test_print(
+        self,
+        normal_print=True,
+        verbose_print=True
+    ):
+        # Get data
+        processor = Processor(verbosity=self.verbosity)
+        data = processor.process_data(
+            file_name=self.local_file_path,
+            branches=["event", "crvcoincs.PEs", "trk.pdg", "trksegs"]
+        )
+        if normal_print:
+            self._safe_test("pyprint:Print:print_n_events (local, single file, verbose=False)", self._normal_print, data, expect_return=False)
+        if verbose_print:
+            self._safe_test("pyprint:Print:print_n_events (local, single file, verbose=False)", self._verbose_print, data, expect_return=False)
+
+    ###### pyvector ######
+
+    def _get_vector(self, vector, branch, vector_name):
+        return vector.get_vector(branch, vector_name) 
+
+    def _get_mag(self, vector, branch, vector_name):
+        return vector.get_mag(branch, vector_name) 
+        
+    def _test_vector(
+        self,
+        get_vector=True,
+        get_mag=True
+    ):
+        # Get data
+        processor = Processor(verbosity=0) 
+        data = processor.process_data(
+            file_name=self.local_file_path,
+            branches=["trksegs"]
+        )
+        # Get selector
+        vector = Vector(verbosity=self.verbosity)
+
+        if get_vector:
+            self._safe_test("pyvector:Vector:get_vector (local, single file, trksegs, mom)", self._get_vector, vector, data["trksegs"], "mom") 
+            self._safe_test("pyvector:Vector:get_vector (local, single file, trksegs, pos)", self._get_vector, vector, data["trksegs"], "pos") 
+
+        if get_mag: 
+            self._safe_test("pyvector:Vector:get_vector (local, single file, trksegs, mom)", self._get_mag, vector, data["trksegs"], "mom") 
+            self._safe_test("pyvector:Vector:get_vector (local, single file, trksegs, pos)", self._get_mag, vector, data["trksegs"], "pos") 
+
+            
     
-    def test_plot(self):
-        pass
-
-    def test_print(self):
-        pass
-
-    def test_select(self):
-        pass
-
-    def test_vector(self):
-        pass
+    ####### TODO: Add more test methods for plot ######
+    
+    def _test_plot(self):
+        plotter = Plot()
     
     ###### Test summary ######
 
@@ -290,14 +406,15 @@ class Tester:
     
     ###### run tests ######
     
-    def run(self, 
-           test_reader=True,
-           test_processor=True, 
-           test_importer=True,
-           test_plot=False,
-           test_print=False,
-           test_select=False,
-           test_vector=False
+    def run(
+        self, 
+        test_reader=True,
+        test_processor=True, 
+        test_importer=True,
+        test_select=True,
+        test_plot=False,
+        test_print=True,
+        test_vector=False
         ): 
         """Run all specified tests"""
         
@@ -314,22 +431,27 @@ class Tester:
             self._test_processor()            
     
         if test_plot:
-            self.test_plot()
+            self.logger.log("************ Testing pyplot ************", "test")
+            self._test_plot()
             
         if test_print:
-            self.test_print()
+            self.logger.log("************ Testing pyprint ************", "test")
+            self._test_print()
             
         if test_select:
-            self.test_select()
+            self.logger.log("************ Testing pyselect ************", "test")
+            self._test_select()
             
         if test_vector:
-            self.test_vector()
+            self.logger.log("************ Testing pyvector ************", "test")
+            self._test_vector()
         
         # Print final summary
         self.print_summary()
         
         return self.error_count == 0  # Return True if all tests passed
 
+# Usage (see run_tests.ipynb)
 # tester = Tester()
 # tester.run()  # Run all tests
 
