@@ -7,4 +7,6 @@ setup(
     description="Python tools for Mu2e collaborators",
     url="https://github.com/Mu2e/pyutils",
     packages=["pyutils"],
+    package_data={"pyutils": ["mu2e.mplstyle"]},  
+    include_package_data=True,
 )
