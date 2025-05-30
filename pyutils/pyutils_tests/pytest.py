@@ -2,19 +2,15 @@
 # May 2025
 # Tests for pyutils modules 
 
-# pyutils path
-import sys
-sys.path.append("..")
-
 # pyutils classes
-from pyread import Reader                  # Data reading 
-from pyprocess import Processor, Skeleton  # Data processing
-from pyimport import Importer              # TTree (EventNtuple) importing 
-from pyplot import Plot                    # Plotting and visualisation 
-from pyprint import Print                  # Array visualisation 
-from pyselect import Select                # Data selection and cut management 
-from pyvector import Vector                # Element wise vector operations
-from pylogger import Logger                # Printout manager
+from pyutils.pyread import Reader                  # Data reading 
+from pyutils.pyprocess import Processor, Skeleton  # Data processing
+from pyutils.pyimport import Importer              # TTree (EventNtuple) importing 
+from pyutils.pyplot import Plot                    # Plotting and visualisation 
+from pyutils.pyprint import Print                  # Array visualisation 
+from pyutils.pyselect import Select                # Data selection and cut management 
+from pyutils.pyvector import Vector                # Element wise vector operations
+from pyutils.pylogger import Logger                # Printout manager
 
 class Tester:
     """ Tests for pyutils """
