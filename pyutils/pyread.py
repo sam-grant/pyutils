@@ -2,8 +2,8 @@
 import uproot
 import os
 import subprocess
-import _env_manager # Environment manager
-from pylogger import Logger # Messaging/logging
+from . import _env_manager # Environment manager
+from .pylogger import Logger # Messaging/logging
 
 class Reader:
     """Unified interface for accessing files, either locally or remotely"""

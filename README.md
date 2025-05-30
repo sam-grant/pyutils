@@ -2,14 +2,9 @@
 
 `pyutils` is a suite of tools intended for Python-based analyses of Mu2e data, particularly `EventNtuple`. We use packages available in the standard Mu2e Python environment and provide functionality that will be common to many Mu2e analysis groups. The goal is to minimise the amount of overhead required when setting up an analysis.  
 
+>**Note**: This is a standlone version of `pyutils` which is installed in the Mu2e Python environment v2.0.0. 
+
 ## 1. Setting up 
-
-Setting up involves two simple steps: 
-
-1. Activating the Mu2e Python environment
-2. Setting your Python path
-   
-### 1.1 Activating the Mu2e Python environment
 
 `pyutils` is designed to work with packages installed in the Mu2e Python environment, which is currently maintained by the L4 for Analysis Interfaces, Sam Grant.
 
@@ -32,17 +27,6 @@ source /cvmfs/mu2e.opensciencegrid.org/env/ana/current/bin/activate
 Also note that `mu2einit` should be aliased to `source /cvmfs/mu2e.opensciencegrid.org/setupmu2e-art.sh` in your `~/.bashrc`.
 
 See the [tutorial](https://github.com/Mu2e/Tutorial/blob/main/EAF/Docs/06-TheMu2eEnvironment.md) on GitHub and the [wiki](https://mu2ewiki.fnal.gov/wiki/Elastic_Analysis_Facility_(EAF)#The_Mu2e_environment) page for more information.
-
-### 1.2 Setting your Python path
-
-The `pyutils` path has been added to the `muse` Python path, so you import the scripts within your working directory if you have `muse` setup. If you do not want to use `muse`, you can append your system path at the start of your analysis script, as shown below. 
-
-```python
-import sys
-sys.path.append("path/to/pyutils/")
-```
-
->**Note**: `pip install pyutils` coming soon. 
 
 ## 2. Using `pyutils` 
 
