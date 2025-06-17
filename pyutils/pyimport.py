@@ -115,10 +115,6 @@ class Importer:
 
             # Return
             return result
-            
-        else:
-            self.logger.log(f"Could not find tree {self.dir_name}/{self.tree_name} in file {self.file_name}", "error")
-            return None
     
         except Exception as e:
             self.logger.log(f"Exception getting branches in file {self.file_name}: {e}", "error")
