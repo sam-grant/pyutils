@@ -27,6 +27,7 @@ class Tester:
         # Test files
         self.local_file_path = "/exp/mu2e/data/users/sgrant/pyutils-test/TestFiles/nts.mu2e.CeEndpointOnSpillTriggered.MDC2020aq_best_v1_3_v06_03_00.001210_00000699.root"
         self.remote_file_name = "nts.mu2e.CeEndpointOnSpillTriggered.MDC2020aq_best_v1_3_v06_03_00.001210_00000699.root"
+        self.remote_wideband_file_name = "rec.mu2e.CRV_wideband_cosmics.CRVWB-000-012-000.000105_001.root" 
         self.local_file_list = "/exp/mu2e/data/users/sgrant/pyutils-test/TestFileLists/local_file_list.txt"
         self.remote_file_list = "/exp/mu2e/data/users/sgrant/pyutils-test/TestFileLists/remote_file_list.txt"
         self.defname = "nts.mu2e.CeEndpointOnSpillTriggered.MDC2020aq_best_v1_3_v06_03_00.root"
@@ -101,12 +102,24 @@ class Tester:
 
         return importer.import_branches()
 
+    
     def _remote_import_branch(self):
         importer = Importer(
             file_name = self.local_file_path,
             branches = ["event"],
             use_remote=True,
             location="tape",
+            verbosity = self.verbosity
+        )
+
+        return importer.import_branches()
+
+    def _remote_wideband_import_branch(self):
+        importer = Importer(
+            file_name = self.remote_wideband_file_name,
+            tree_path = "run",
+            branches = ["runNumber"],
+            use_remote=True,
             verbosity = self.verbosity
         )
 
@@ -138,9 +151,10 @@ class Tester:
     def _test_importer(
         self, 
         local_import_branch=True,
-        remote_import_branch=True,
-        local_import_grouped_branches=True,
-        local_import_all_branches=True
+        remote_import_branch=False,
+        local_import_grouped_branches=False,
+        local_import_all_branches=False,
+        remote_wideband_import_branch=True
         
     ):
         """Test pyimport:Importer module"""
@@ -157,6 +171,9 @@ class Tester:
 
         if local_import_all_branches:
             self._safe_test("pyimport:Importer:import_branches (local, all branches)", self._local_import_all_branches)
+
+        if remote_wideband_import_branch:
+            self._safe_test("pyimport:Importer:import_branches (remote, wideband, single branch)", self._remote_wideband_import_branch)
             
     ###### pyprocess ######
     
