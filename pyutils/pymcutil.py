@@ -5,16 +5,16 @@ class MC:
     """Utility class for importing mc information for use in analysis
     """
     
-    def __init__(self, data):
+    def __init__(self):
         """Initialise the importer
         
         Args:
             data : array in format produced from processing
         """
-        self.particle_count_return
+        self.particle_count_return = None
         self.print_prefix = "[pymcutil] "
         
-      print(f"{self.print_prefix}Initialised")
+        print(f"{self.print_prefix}Initialised")
       
     def count_particle_types(self, data):
       """
