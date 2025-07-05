@@ -220,7 +220,7 @@ class Select:
     def hasTrkCrvCoincs(self, data, dt_threshold=150):
         """ simple version of the crv coincidence checker """
 
-        at_trk_front = self..select_surface(data['trkfit'], sid=0)
+        at_trk_front = self.select_surface(data['trkfit'], sid=0)
         
         # Get track and coincidence times
         trk_times = data["trksegs"]["time"][at_trk_front]  # events × tracks × segments
