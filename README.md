@@ -761,14 +761,34 @@ CLASSES
 
 Utility for helping users to understand the MC origins of given tracks.
 
-Development underway by Leo Borrel (contact for update).
 
 <details>
 <summary><strong>Click for details<strong></summary>
 
 ```
-NAME
-    pymcutil - #TODO
+class MC(builtins.object)
+     |  pymcutil(verbosity=1, print_prefix='[pymcutil]')
+     |
+     |  To help identify true origin of an event
+     |
+     |  Methods defined here:
+     |
+     |  __init__(self, verbosity=1, print_prefix='[pylogger]')
+     |      Initialize the mcutil
+     |
+     |      Args:
+     |          particle_count_return : array of primary particle start codes (from trkmcsim)
+     |          print_prefix (str, opt): Prefix for printouts, e.g. "[pyprocess]"
+     |
+     |  count_particle_types(self, data)
+     |      looks at the 'trkmcsim' field of the data list and finds start code.
+     |      Assumes 1 primary per event, gives -2 code to anything else
+     |
+     |      Returns:
+     |          particle_count_return : list of primary codes associated with input data 1 per event
+     |
+     |  ----------------------------------------------------------------------
+  
 ```
 
 </details>
