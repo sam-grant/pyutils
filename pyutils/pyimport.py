@@ -69,10 +69,10 @@ class Importer:
             # Set tree
             tree = current 
             
-            # Print tree info 
-            self.logger.log("Accessing branches in tree:", "max")
-            if self.verbosity > 1:
-                tree.show(filter_name=self.branches, interpretation_width=100)
+            # # Print tree info 
+            # self.logger.log("Accessing branches in tree:", "max")
+            # if self.verbosity > 1:
+            #     tree.show(self.branches, interpretation_width=100)
                 
             # Result container
             result = {}
@@ -83,14 +83,14 @@ class Importer:
     
             # Flat list
             elif isinstance(self.branches, list):
-                result = tree.arrays(filter_name=self.branches, library="ak")
+                result = tree.arrays(self.branches, library="ak")
     
             # Grouped dictionary
             elif isinstance(self.branches, dict):
                 data = {}
                 # Get arrays per field/group
                 for group, sub_branches in self.branches.items():
-                    data[group] = tree.arrays(filter_name=sub_branches, library="ak")
+                    data[group] = tree.arrays(sub_branches, library="ak")
                 # Zip them together 
                 result = ak.zip(data) 
     
@@ -99,7 +99,7 @@ class Importer:
                 self.branches = [branch for branch in tree.keys()] 
                 self.logger.log("Importing all branches", "info")
                 # Return array 
-                result = tree.arrays(filter_name=self.branches, library="ak")
+                result = tree.arrays(self.branches, library="ak")
                 
             else: 
                 self.logger.log(f"Branches type {self.branches.type} not recognised", "error")
