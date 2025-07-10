@@ -37,7 +37,7 @@ class Plot:
             verbosity = verbosity
         )
 
-        self.logger.log(f"Initialised Plot with {self.style_path.rsplit('/', 1)[-1]} and verbosity = {self.verbosity}", "info")
+        self.logger.log(f"Initialised Plot with {self.style_path.rsplit("/", 1)[-1]} and verbosity = {self.verbosity}", "info")
 
     def round_to_sig_fig(self, val, sf): 
         """
@@ -65,7 +65,7 @@ class Plot:
 
     def get_stats(self, array, xmin, xmax): 
         """
-        Calculate 'stat box' statistics from a 1D array.
+        Calculate "stat box" statistics from a 1D array.
         
         Args:
           array (np.ndarray): Input array
@@ -88,40 +88,45 @@ class Plot:
         overflows = len(array[array > xmax]) # Number of overflows
         return n_entries, mean, mean_err, std_dev, std_dev_err, underflows, overflows
 
-
-
-    def _scientific_notation(self, ax, lower_limit=1e-3, upper_limit=1e3, cbar=None): 
+    def _scientific_notation(self, ax, lower_limit=1e-3, upper_limit=1e4, cbar=None): 
         """
         Set scientific notation on axes when appropriate.
         
         Args:
           ax (plt.Axes): Matplotlib axes object
+          lower_limit (float): Lower threshold for scientific notation
+          upper_limit (float): Upper threshold for scientific notation
           cbar (plt.colorbar.Colorbar, optional): Colorbar object
             
         Note:
-          Scientific notation is applied when values are ≥ 10^4 or ≤ 10^-4
+          Scientific notation is applied when values are outside the specified limits
         """
-        # Access the max values of the axes
-        xmax, ymax = ax.get_xlim()[1], ax.get_ylim()[1]
+        # Convert limits to scilimits format (powers of 10)
+        lower_exp = int(np.log10(lower_limit))
+        upper_exp = int(np.log10(upper_limit))
+        scilimits = (lower_exp, upper_exp)
         
         # Configure x-axis
-        if ax.get_xscale() != 'log': 
-            ax.xaxis.set_major_formatter(ScalarFormatter(useMathText=True)) # Use math formatting 
-            ax.ticklabel_format(style='sci', axis='x', scilimits=(-4, 4)) # Set scientific notation
-            # FIXME: x exponent overlaps with the axis title with right-aligned labels
+        if ax.get_xscale() != "log": 
+            ax.xaxis.set_major_formatter(ScalarFormatter(useMathText=True))
+            ax.ticklabel_format(style="sci", axis="x", scilimits=scilimits)
         
         # Configure y-axis
-        if ax.get_yscale() != 'log': 
+        if ax.get_yscale() != "log": 
             ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
-            ax.ticklabel_format(style='sci', axis='y', scilimits=(-4, 4))
+            ax.ticklabel_format(style="sci", axis="y", scilimits=scilimits)
         
         # Configure colourbar
         if cbar is not None: 
-            # Access the max value of the cbar range
-            cmax = cbar.norm.vmax
-            if abs(cmax) >= upper_limit or abs(cmax) <= lower_limit:
-                cbar.ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))  # Use math formatting
-                cbar.ax.ticklabel_format(style='sci', axis='y', scilimits=(-4, 4))  # Set scientific notation
+            # Get the colorbar range
+            cmin, cmax = cbar.norm.vmin, cbar.norm.vmax
+            
+            # Check if any values are outside the limits
+            if (abs(cmax) >= upper_limit or abs(cmax) <= lower_limit or 
+                abs(cmin) >= upper_limit or abs(cmin) <= lower_limit):
+                
+                cbar.ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
+                cbar.ax.ticklabel_format(style="sci", axis="y", scilimits=scilimits)
 
     def plot_1D(        
         self,
@@ -133,8 +138,8 @@ class Plot:
         title = None,
         xlabel = None,
         ylabel = None,
-        col = 'black',
-        leg_pos = 'best',
+        col = "black",
+        leg_pos = "best",
         out_path = None,
         dpi = 300,
         log_x = False,
@@ -159,12 +164,13 @@ class Plot:
           title (str, optional): Plot title
           xlabel (str, optional): X-axis label
           ylabel (str, optional): Y-axis label
-          col (str, optional): Histogram color. Defaults to 'black'
-          leg_pos (str, optional): Legend position. Defaults to 'best'
+          col (str, optional): Histogram color. Defaults to "black"
+          leg_pos (str, optional): Legend position. Defaults to "best"
           out_path (str, optional): Path to save the plot
           dpi (int, optional): DPI for saved plot. Defaults to 300
           log_x (bool, optional): Use log scale for x-axis. Defaults to False
           log_y (bool, optional): Use log scale for y-axis. Defaults to False
+          norm_by_area (bool, optional): Normalise the curve so that the integral is one
           under_over (bool, optional): Show overflow/underflow stats. Defaults to False
           stat_box (bool, optional): Show statistics box. Defaults to True
           stat_box_errors (bool, optional): Show errors in stats box. Defaults to False
@@ -187,55 +193,70 @@ class Plot:
             fig, ax = plt.subplots()
             new_fig = True
     
-        # Create the histogram 
-        counts, bin_edges, _ = ax.hist(array, bins=int(nbins), range=(xmin, xmax), histtype='step', edgecolor=col,  fill=False, density=norm_by_area, weights=weights)
+        # Create the histogram with proper density setting
+        counts, bin_edges, _ = ax.hist(array, bins=int(nbins), range=(xmin, xmax), 
+                                       histtype="step", edgecolor=col, fill=False, 
+                                       density=norm_by_area, weights=weights)
+        
         bin_centres = (bin_edges[:-1] + bin_edges[1:]) / 2
-        bin_errors = 0 * len(bin_centres)
-
+        bin_width = bin_edges[1] - bin_edges[0]
+    
         # Calculate errors
         if weights is None:
-            bin_errors = np.sqrt(counts)  # Poisson errors for unweighted data
+            # For unweighted data
+            raw_counts, _ = np.histogram(array, bins=int(nbins), range=(xmin, xmax))
+            bin_errors = np.sqrt(raw_counts)  # Poisson errors
+            if norm_by_area:
+                # Scale errors by the same normalization factor as the counts
+                total_entries = np.sum(raw_counts)
+                if total_entries > 0:
+                    bin_errors = bin_errors / (total_entries * bin_width)
         else:
-            # Weighted errors: sqrt(sum(weights^2)) for each bin
+            # For weighted data
+            raw_counts, _ = np.histogram(array, bins=int(nbins), range=(xmin, xmax), weights=weights)
             weights_squared, _ = np.histogram(array, bins=int(nbins), range=(xmin, xmax), weights=np.square(weights))
             bin_errors = np.sqrt(weights_squared)
+            if norm_by_area:
+                # Scale errors by the same normalization factor
+                total_weight = np.sum(raw_counts)
+                if total_weight > 0:
+                    bin_errors = bin_errors / (total_weight * bin_width)
         
-        # Plot the histogram 
+        # Add error bars if requested
         if error_bars:
-            ax.errorbar(bin_centres, counts, yerr=bin_errors, ecolor=col, fmt='.', color=col, capsize=2, elinewidth=1)
-        else:
-            ax.hist(array, bins=int(nbins), range=(xmin, xmax), histtype='step', edgecolor=col, fill=False, density=False, weights=weights)
-
+            ax.errorbar(bin_centres, counts, yerr=bin_errors, ecolor=col, fmt=".", 
+                       color=col, capsize=2, elinewidth=1)
+    
         # Set x-axis limits
         ax.set_xlim(xmin, xmax)
         
         # Log scale 
         if log_x: 
-            ax.set_xscale('log')
+            ax.set_xscale("log")
         if log_y: 
-            ax.set_yscale('log')
+            ax.set_yscale("log")
       
-        # Statistics
+        # Statistics (use original unnormalized data for stats)
         N, mean, mean_err, std_dev, std_dev_err, underflows, overflows = self.get_stats(array, xmin, xmax)
     
         # Create legend text (imitating the ROOT statbox)
-        leg_txt = f'Entries: {N}\nMean: {self.round_to_sig_fig(mean, 3)}\nStd Dev: {self.round_to_sig_fig(std_dev, 3)}'
+        leg_txt = f"Entries: {N}\nMean: {self.round_to_sig_fig(mean, 3)}\nStd Dev: {self.round_to_sig_fig(std_dev, 3)}"
     
         # Stats box
         if stat_box_errors: 
-            leg_txt = f'Entries: {N}\nMean: {self.round_to_sig_fig(mean, 3)}' + rf'$\pm$' + f'{self.round_to_sig_fig(mean_err, 1)}\nStd Dev: {self.round_to_sig_fig(std_dev, 3)}' rf'$\pm$' + f'{self.round_to_sig_fig(std_dev_err, 1)}'
+            leg_txt = f"Entries: {N}\nMean: {self.round_to_sig_fig(mean, 3)}" + rf"$\pm$" + f"{self.round_to_sig_fig(mean_err, 1)}\nStd Dev: {self.round_to_sig_fig(std_dev, 3)}" rf"$\pm$" + f"{self.round_to_sig_fig(std_dev_err, 1)}"
         if under_over: 
-            leg_txt += f'\nUnderflows: {underflows}\nOverflows: {overflows}'
+            leg_txt += f"\nUnderflows: {underflows}\nOverflows: {overflows}"
     
         # Add legend to the plot
         if stat_box: 
             ax.legend([leg_txt], loc=leg_pos)
-
+    
         # Formatting 
         ax.set_title(title)
         ax.set_xlabel(xlabel) 
         ax.set_ylabel(ylabel) 
-
+    
         # Scientific notation 
         self._scientific_notation(ax)
     
@@ -245,114 +266,159 @@ class Plot:
             plt.tight_layout()
         # Save
         if out_path:
-            plt.savefig(out_path, dpi=dpi, bbox_inches='tight')
+            plt.savefig(out_path, dpi=dpi, bbox_inches="tight")
             self.logger.log(f"Wrote:\n\t{out_path}", "success")
         # Show 
         if show: 
             plt.show()
-
+        
     def plot_1D_overlay(
-        self,
-        hists_dict, 
-        weights = None, 
-        nbins = 100,
-        xmin = -1.0,
-        xmax = 1.0,
-        title = None,
-        xlabel = None,
-        ylabel = None,
-        out_path = None,
-        dpi = 300,
-        leg_pos = 'best',
-        log_x = False,
-        log_y = False,
-        norm_by_area = False,
-        ax = None,
-        show = True
-        ):
-        """
-        Overlay multiple 1D histograms from a dictionary of arrays.
-        
-        Args:
-            hists_dict (Dict[str, np.ndarray]): Dictionary mapping labels to arrays
-            weights (List[np.ndarray], optional): List of weight arrays for each histogram
-            nbins (int, optional): Number of bins. Defaults to 100
-            xmin (float, optional): Minimum x-axis value. Defaults to -1.0
-            xmax (float, optional): Maximum x-axis value. Defaults to 1.0
-            title (str, optional): Plot title
-            xlabel (str, optional): X-axis label
-            ylabel (str, optional): Y-axis label
-            out_path (str, optional): Path to save the plot
-            dpi (int, optional): DPI for saved plot. Defaults to 300
-            leg_pos (str, optional): Legend position. Defaults to 'best'
-            log_x (bool, optional): Use log scale for x-axis. Defaults to False
-            log_y (bool, optional): Use log scale for y-axis. Defaults to False
-            ax (plt.Axes, optional): External custom axes.
-            show (bool, optional): Display the plot. Defaults to True
+            self,
+            hists_dict, 
+            weights = None, 
+            nbins = 100,
+            xmin = -1.0,
+            xmax = 1.0,
+            title = None,
+            xlabel = None,
+            ylabel = None,
+            out_path = None,
+            dpi = 300,
+            leg_pos = "best",
+            log_x = False,
+            log_y = False,
+            norm_by_area = False,
+            styles = None,  # NEW: Dictionary of styles for each histogram
+            ax = None,
+            show = True
+            ):
+            """
+            Overlay multiple 1D histograms from a dictionary of arrays.
             
-        Raises:
-            ValueError: If hists_dict is empty or None
-            ValueError: If weights length doesn't match number of histograms
-        """
-        # Input validation
-        if not hists_dict:
-            self.logger.log("Empty or None histogram dictionary provided", "error")
-            return None
-        if weights is not None and len(weights) != len(hists_dict):
-            self.logger.log("Number of weight arrays does not match the number of histograms", "error")
-            return None
-
-        # Create or use provided axes
-        new_fig = False
-        if ax is None:
-            fig, ax = plt.subplots()
-            new_fig = True
-
-        # Iterate over the histograms and plot each one
-        for i, (label, hist) in enumerate(hists_dict.items()):
-            weight = None if weights is None else weights[i]
-            ax.hist(
-                hist,
-                bins=nbins,
-                range=(xmin, xmax),
-                histtype='step',
-                fill=False,
-                density=norm_by_area,
-                label=label,
-                weights=weight
-            )
+            Args:
+                hists_dict (Dict[str, np.ndarray]): Dictionary mapping labels to arrays
+                weights (List[np.ndarray], optional): List of weight arrays for each histogram
+                nbins (int, optional): Number of bins. Defaults to 100
+                xmin (float, optional): Minimum x-axis value. Defaults to -1.0
+                xmax (float, optional): Maximum x-axis value. Defaults to 1.0
+                title (str, optional): Plot title
+                xlabel (str, optional): X-axis label
+                ylabel (str, optional): Y-axis label
+                out_path (str, optional): Path to save the plot
+                dpi (int, optional): DPI for saved plot. Defaults to 300
+                leg_pos (str, optional): Legend position. Defaults to "best"
+                log_x (bool, optional): Use log scale for x-axis. Defaults to False
+                log_y (bool, optional): Use log scale for y-axis. Defaults to False
+                norm_by_area (bool, optional): Normalize histograms by area. Defaults to False
+                styles (Dict[str, Dict], optional): Style configuration for each histogram.
+                    Keys should match hists_dict keys. Style dict can contain:
+                    - "histtype": "step", "bar", "stepfilled" (default: "step")
+                    - "color": matplotlib color (default: auto-assigned)
+                    - "alpha": transparency 0-1 (default: 1.0 for step, 0.3 for filled)
+                    - "linewidth": line width for step histograms (default: 1.5)
+                    - "fill": True/False for step histograms (default: False)
+                ax (plt.Axes, optional): External custom axes.
+                show (bool, optional): Display the plot. Defaults to True
+                
+            Raises:
+                ValueError: If hists_dict is empty or None
+                ValueError: If weights length doesn"t match number of histograms
+                
+            Example:
+                # Physics-style overlay
+                styles = {
+                    "Reco": {"histtype": "step", "color": "blue", "linewidth": 2},
+                    "MC truth": {"histtype": "bar", "color": "red", "alpha": 0.3}
+                }
+                plotter.plot_1D_overlay(data_dict, styles=styles)
+            """
+            # Input validation
+            if not hists_dict:
+                self.logger.log("Empty or None histogram dictionary provided", "error")
+                return None
+            if weights is not None and len(weights) != len(hists_dict):
+                self.logger.log("Number of weight arrays does not match the number of histograms", "error")
+                return None
+                
+            # Create or use provided axes
+            new_fig = False
+            if ax is None:
+                fig, ax = plt.subplots()
+                new_fig = True
+                
+            # Iterate over the histograms and plot each one
+            for i, (label, hist) in enumerate(hists_dict.items()):
+                weight = None if weights is None else weights[i]
+                
+                # Get style configuration for this histogram
+                style = styles.get(label, {}) if styles else {}
+                
+                # Set default style parameters
+                histtype = style.get("histtype", "step")
+                color = style.get("color", None)  # Let matplotlib use style file defaults
+                linewidth = style.get("linewidth", 1.5 if histtype == "step" else 1)
+                
+                # Set alpha based on histogram type if not specified
+                if "alpha" in style:
+                    alpha = style["alpha"]
+                else:
+                    alpha = 1.0 if histtype == "step" else 0.3
+                    
+                # Set fill parameter
+                fill = style.get("fill", histtype != "step")
+                
+                # Plot the histogram
+                hist_kwargs = {
+                    "bins": nbins,
+                    "range": (xmin, xmax),
+                    "histtype": histtype,
+                    "fill": fill,
+                    "density": norm_by_area,
+                    "label": label,
+                    "weights": weight,
+                    "alpha": alpha,
+                    "linewidth": linewidth
+                }
+                
+                # Only add color if explicitly specified
+                if color is not None:
+                    hist_kwargs["color"] = color
+                    
+                ax.hist(hist, **hist_kwargs)
+            
+            # Configure axes scales
+            if log_x:
+                ax.set_xscale("log")
+            if log_y:
+                ax.set_yscale("log")
+          
+            # Set plot limits
+            ax.set_xlim(xmin, xmax)
+            
+            # Format titles
+            ax.set_title(title)
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel(ylabel)
+            
+            # Set legend
+            ax.legend(loc=leg_pos)
+            
+            # Configure scientific notation
+            self._scientific_notation(ax)
         
-        # Configure axes scales
-        if log_x:
-            ax.set_xscale('log')
-        if log_y:
-            ax.set_yscale('log')
-      
-        # Set plot limits
-        ax.set_xlim(xmin, xmax)
-
-        # Format titles
-        ax.set_title(title)
-        ax.set_xlabel(xlabel)
-        ax.set_ylabel(ylabel)
-
-        # Set legend
-        ax.legend(loc=leg_pos)
-        
-        # Configure scientific notation and legend
-        self._scientific_notation(ax)
-    
-        # Handle figure if not using external axes
-        if new_fig:
-            plt.tight_layout()
-        # Save if output path provided
-        if out_path:
-            plt.savefig(out_path, dpi=dpi, bbox_inches="tight")
-            self.logger.log(f"Wrote:\n\t{out_path}", "success")
-        # Show 
-        if show:
-            plt.show()
-
+            # Handle figure if not using external axes
+            if new_fig:
+                plt.tight_layout()
+                
+            # Save if output path provided
+            if out_path:
+                plt.savefig(out_path, dpi=dpi, bbox_inches="tight")
+                self.logger.log(f"Wrote:\n\t{out_path}", "success")
+                
+            # Show 
+            if show:
+                plt.show()
+            
     def plot_2D(
         self,
         x,
@@ -369,7 +435,7 @@ class Plot:
         ylabel=None,
         zlabel=None,
         out_path=None,
-        cmap='inferno',
+        cmap="inferno",
         dpi=300,
         log_x=False,
         log_y=False,
@@ -397,7 +463,7 @@ class Plot:
             ylabel (str, optional): Y-axis label
             zlabel (str, optional): Colorbar label
             out_path (str, optional): Path to save the plot
-            cmap (str): Matplotlib colormap name. Defaults to 'inferno'
+            cmap (str): Matplotlib colormap name. Defaults to "inferno"
             dpi (int): DPI for saved plot. Defaults to 300
             log_x (bool): Use log scale for x-axis
             log_y (bool): Use log scale for y-axis
@@ -454,16 +520,16 @@ class Plot:
             hist.T,
             cmap=cmap,
             extent=[xmin, xmax, ymin, ymax],
-            aspect='auto',
-            origin='lower',
+            aspect="auto",
+            origin="lower",
             norm=norm
         )
     
         # Configure axes scales
         if log_x:
-            ax.set_xscale('log')
+            ax.set_xscale("log")
         if log_y:
-            ax.set_yscale('log')
+            ax.set_yscale("log")
 
         # Add colorbar
         cbar = None
@@ -477,7 +543,7 @@ class Plot:
         ax.set_ylabel(ylabel)
     
         # Scientific notation
-        self._scientific_notation(ax, cbar)
+        self._scientific_notation(ax, cbar=cbar)
     
         if new_fig:
             # Draw
@@ -505,8 +571,8 @@ class Plot:
         xmax=None,
         ymin=None,
         ymax=None,
-        col='black',
-        linestyle='None',
+        col="black",
+        linestyle="None",
         out_path=None,
         dpi=300,
         log_x=False,
@@ -529,8 +595,8 @@ class Plot:
           xmax (float, optional): Maximum x value
           ymin (float, optional): Minimum y value
           ymax (float, optional): Maximum y value
-          color (str): Marker and error bar color, defaults to 'black'
-          linestyle (str): Style for connecting lines, defaults to 'None'
+          color (str): Marker and error bar color, defaults to "black"
+          linestyle (str): Style for connecting lines, defaults to "None"
           out_path (str, optional): Path to save the plot
           dpi (int): DPI for saved plot. Defaults to 300
           log_x (bool): Use log scale for x-axis, defaults to False
@@ -557,7 +623,7 @@ class Plot:
             x, y,
             xerr=xerr,
             yerr=yerr,
-            fmt='o',
+            fmt="o",
             color=col,
             markersize=4,
             ecolor=col,
@@ -575,9 +641,9 @@ class Plot:
 
         # Configure log scales
         if log_x:
-            ax.set_xscale('log')
+            ax.set_xscale("log")
         if log_y:
-            ax.set_yscale('log')
+            ax.set_yscale("log")
       
         # Set labels
         ax.set_title(title)
@@ -593,7 +659,7 @@ class Plot:
 
         # Save if path provided
         if out_path:
-            plt.savefig(out_path, dpi=dpi, bbox_inches='tight')
+            plt.savefig(out_path, dpi=dpi, bbox_inches="tight")
             self.logger.log(f"Wrote:\n\t{out_path}", "success")
 
         # Show if requested
@@ -610,8 +676,8 @@ class Plot:
         xmax=None,
         ymin=None,
         ymax=None,
-        legend_position='best',
-        linestyle='None',
+        legend_position="best",
+        linestyle="None",
         out_path=None,
         log_x=False,
         log_y=False,
@@ -625,13 +691,13 @@ class Plot:
         Args:
           graphs (dict): Dictionary of graphs to plot, where each graph is a dictionary:
             {
-              'label1': {
-                'x': x_array,
-                'y': y_array,
-                'xerr': xerr_array,  # optional
-                'yerr': yerr_array   # optional
+              "label1": {
+                "x": x_array,
+                "y": y_array,
+                "xerr": xerr_array,  # optional
+                "yerr": yerr_array   # optional
               },
-              'label2': {...}
+              "label2": {...}
             }
           title (str, optional): Plot title
           xlabel (str, optional): X-axis label
@@ -640,8 +706,8 @@ class Plot:
           xmax (float, optional): Maximum x value
           ymin (float, optional): Minimum y value
           ymax (float, optional): Maximum y value
-          leg_pos (str): Position of legend. Defaults to 'best'
-          linestyle (str): Style for connecting lines. Defaults to 'None'
+          leg_pos (str): Position of legend. Defaults to "best"
+          linestyle (str): Style for connecting lines. Defaults to "None"
           out_path (str, optional): Path to save plot
           log_x (bool): Use log scale for x-axis, defaults to False
           log_y (bool): Use log scale for y-axis, defaults to False
@@ -664,25 +730,25 @@ class Plot:
             if not isinstance(graph_data, dict):
                 self.logger.log(f"Graph data for {label} must be a dictionary", "error")
                 return None
-            if 'x' not in graph_data or 'y' not in graph_data:
+            if "x" not in graph_data or "y" not in graph_data:
                 self.logger.log(f"Graph data for {label} must contain 'x' and 'y' arrays", "error")
                 return None 
-            if len(graph_data['x']) != len(graph_data['y']):
+            if len(graph_data["x"]) != len(graph_data["y"]):
                 self.logger.log(f"X and Y arrays for {label} must have same length", "error")
                 return None 
                 
         # Get data
-        x = graph_data['x']
-        y = graph_data['y']
-        xerr = graph_data.get('xerr', None)  # Use .get() to handle missing error bars
-        yerr = graph_data.get('yerr', None)
+        x = graph_data["x"]
+        y = graph_data["y"]
+        xerr = graph_data.get("xerr", None)  # Use .get() to handle missing error bars
+        yerr = graph_data.get("yerr", None)
         
         # Create this graph
         ax.errorbar(
             x, y,
             yerr=yerr,
             xerr=xerr,
-            fmt='o',
+            fmt="o",
             label=label,
             markersize=4,
             capsize=2,
@@ -699,9 +765,9 @@ class Plot:
 
         # Configure log scales
         if log_x:
-            ax.set_xscale('log')
+            ax.set_xscale("log")
         if log_y:
-            ax.set_yscale('log')
+            ax.set_yscale("log")
       
         # Set labels
         ax.set_title(title)
@@ -720,7 +786,7 @@ class Plot:
 
         # Save if path provided
         if out_path:
-            plt.savefig(out_path, dpi=dpi, bbox_inches='tight')
+            plt.savefig(out_path, dpi=dpi, bbox_inches="tight")
             self.logger.log(f"Wrote:\n\t{out_path}", "success")
 
         # Show 
