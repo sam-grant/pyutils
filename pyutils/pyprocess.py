@@ -189,6 +189,8 @@ class Processor:
                         
                     except Exception as e:
                         self.logger.log(f"Error processing {file_name}:\n{e}", "error")
+                        # Increment failed files on exception
+                        failed_files += 1
                         # Redraw progress bar
                         pbar.refresh()
 
