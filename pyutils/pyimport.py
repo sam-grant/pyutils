@@ -99,7 +99,7 @@ class Importer:
                 self.branches = [branch for branch in tree.keys()] 
                 self.logger.log("Importing all branches", "info")
                 # Return array 
-                result = tree.arrays(self.branches, library="ak")
+                result = tree.arrays(filter_name=self.branches, library="ak")
                 
             else: 
                 self.logger.log(f"Branches type {self.branches.type} not recognised", "error")
