@@ -59,6 +59,15 @@ class Processor:
         Returns:
             List of file paths
         """
+
+        # Long help message for warnings about file lists of length zero 
+        help_message = f"""
+        This issue is usually caused by one of the following:
+            1. You don't have a token (trying running getToken)
+            2. The files are not staged
+            3. The file location is incorrect (currently location={self.location})
+            4. use_remote is not True, if working with /pnfs on EAF (currently remote={self.use_remote})
+        """
         
         # Check if a file list path was provided
         if file_list_path:
@@ -77,7 +86,7 @@ class Processor:
                 if (len(file_list) > 0):
                     self.logger.log(f"Successfully loaded file list\n\tPath: {defname}\n\tCount: {len(file_list)} files", "success")
                 else: 
-                    self.logger.log(f"File list has length {len(file_list)}", "warning")
+                    self.logger.log(f"File list has length {len(file_list)}{help_message}", "warning")
                 
                 return file_list
                 
@@ -101,7 +110,7 @@ class Processor:
                 if (len(file_list) > 0):
                     self.logger.log(f"Successfully loaded file list\n\tSAM definition: {defname}\n\tCount: {len(file_list)} files", "success")
                 else: 
-                    self.logger.log(f"File list has length {len(file_list)}", "warning")
+                    self.logger.log(f"File list has length {len(file_list)}{help_message}", "warning")
                     
                 # Return the file list
                 return file_list
