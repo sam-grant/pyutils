@@ -26,8 +26,11 @@ class Tester:
 
         # Test files
         self.local_file_path = "/exp/mu2e/data/users/sgrant/pyutils-test/TestFiles/nts.mu2e.CeEndpointOnSpillTriggered.MDC2020aq_best_v1_3_v06_03_00.001210_00000699.root"
+        self.local_wb_file_path = "/exp/mu2e/data/users/sgrant/pyutils-test/TestFiles/rec.mu2e.CRV_wideband_cosmics.CRVWB-000-012-000.000105_001.root"
         self.remote_file_name = "nts.mu2e.CeEndpointOnSpillTriggered.MDC2020aq_best_v1_3_v06_03_00.001210_00000699.root"
+        self.remote_wideband_file_name = "rec.mu2e.CRV_wideband_cosmics.CRVWB-000-012-000.000105_001.root" 
         self.local_file_list = "/exp/mu2e/data/users/sgrant/pyutils-test/TestFileLists/local_file_list.txt"
+        self.bad_local_file_list = "/exp/mu2e/data/users/sgrant/pyutils-test/TestFileLists/bad_local_file_list.txt"
         self.remote_file_list = "/exp/mu2e/data/users/sgrant/pyutils-test/TestFileLists/remote_file_list.txt"
         self.defname = "nts.mu2e.CeEndpointOnSpillTriggered.MDC2020aq_best_v1_3_v06_03_00.root"
         
@@ -101,6 +104,27 @@ class Tester:
 
         return importer.import_branches()
 
+    def _local_import_wb_branch(self): # Wideband (WB) tree 
+        importer = Importer(
+            file_name = self.local_wb_file_path,
+            tree_path = "run",
+            branches = ["runNumber"],
+            use_remote=False,
+            verbosity = self.verbosity
+        )
+
+        return importer.import_branches()
+
+    def _local_import_special_branch(self): # Branches with special characters in the name
+        importer = Importer(
+            file_name = self.local_file_path,
+            branches = ["crvcoincs.PEsPerLayer[4]", "crvcoincs.sidePEsPerLayer[8]"],
+            use_remote=False,
+            verbosity = self.verbosity
+        )
+
+        return importer.import_branches()
+    
     def _remote_import_branch(self):
         importer = Importer(
             file_name = self.local_file_path,
@@ -117,7 +141,7 @@ class Tester:
             file_name = self.local_file_path,
             branches = {
                 "evt" : ["event"],
-                "crv" : ["crvcoincs.PEs", "crvcoincs.nhits"]
+                "crv" : ["crvcoincs.PEs", "crvcoincs.nHits"]
             },
             use_remote=False,
             verbosity = self.verbosity
@@ -130,7 +154,7 @@ class Tester:
             file_name = self.local_file_path,
             branches = "*",
             use_remote=False,
-            verbosity = 1 # this one is loud! self.verbosity
+            verbosity = 1 # this one is loud! 
         )
 
         return importer.import_branches()
@@ -138,10 +162,11 @@ class Tester:
     def _test_importer(
         self, 
         local_import_branch=True,
+        local_import_wb_branch=True,
+        local_import_special_branch=True,
         remote_import_branch=True,
         local_import_grouped_branches=True,
-        local_import_all_branches=True
-        
+        local_import_all_branches=True 
     ):
         """Test pyimport:Importer module"""
         self.logger.log("Testing pyimport:Importer", "info")  
@@ -149,6 +174,12 @@ class Tester:
         if local_import_branch:
             self._safe_test("pyimport:Importer:import_branches (local, single branch)", self._local_import_branch)
 
+        if local_import_wb_branch:
+            self._safe_test("pyimport:Importer:import_branches (local, single WB file, single branch)", self._local_import_wb_branch)            
+
+        if local_import_special_branch:
+            self._safe_test("pyimport:Importer:import_branches (local, single file, special branches)", self._local_import_special_branch)     
+            
         if local_import_branch:
             self._safe_test("pyimport:Importer:import_branches (remote, single branch)", self._remote_import_branch)
             
@@ -157,6 +188,9 @@ class Tester:
 
         if local_import_all_branches:
             self._safe_test("pyimport:Importer:import_branches (local, all branches)", self._local_import_all_branches)
+
+        # if remote_wideband_import_branch:
+        #     self._safe_test("pyimport:Importer:import_branches (remote, wideband, single branch)", self._remote_wideband_import_branch)
             
     ###### pyprocess ######
     
@@ -165,6 +199,24 @@ class Tester:
         return processor.process_data(
             file_name=self.local_file_path,
             branches=["event"]
+        )
+
+
+    def _local_process_wb_file(self): # WB tree structure
+        processor = Processor(
+            tree_path="run",
+            verbosity=self.verbosity
+        )
+        return processor.process_data(
+            file_name=self.local_wb_file_path,
+            branches=["runNumber"]
+        )
+
+    def _local_process_file_special_branch(self): # Branches with special characters in the name
+        processor = Processor(verbosity=self.verbosity)
+        return processor.process_data(
+            file_name=self.local_file_path,
+            branches=["crvcoincs.PEsPerLayer[4]", "crvcoincs.sidePEsPerLayer[8]"]
         )
 
     def _remote_process_file(self):
@@ -195,6 +247,13 @@ class Tester:
         )
         return processor.get_file_list(defname=self.defname)
 
+    # def _sam_get_file_list_TEST(self):
+    #     processor = Processor(
+    #         use_remote=False,
+    #         verbosity=self.verbosity
+    #     )
+    #     return processor.get_file_list(defname=self.defname)
+
     def _basic_multithread(self):
         processor = Processor(
             verbosity=self.verbosity
@@ -204,6 +263,15 @@ class Tester:
             branches = ["event"]
         )
 
+    def _basic_bad_multithread(self):
+        processor = Processor(
+            verbosity=self.verbosity
+        )
+        return processor.process_data(
+            file_list_path=self.bad_local_file_list,
+            branches = ["event"]
+        )
+        
     def _basic_multiprocess(self):
         processor = Processor(
             verbosity=self.verbosity
@@ -228,6 +296,8 @@ class Tester:
     def _test_processor(
         self, 
         local_process_file=True,
+        local_process_wb_file=True,
+        local_process_file_special_branch=True,
         remote_process_file=True,
         get_file_list=True,
         basic_multifile=True,
@@ -237,6 +307,12 @@ class Tester:
         if local_process_file:
             self._safe_test("pyprocess:Processor:process_data (local, single file, single branch)", self._local_process_file)
 
+        if local_process_wb_file:
+            self._safe_test("pyprocess:Processor:process_data (local, single WB file, single branch)", self._local_process_wb_file)            
+
+        if local_process_file_special_branch:
+            self._safe_test("pyprocess:Processor:process_data (local, single file, special branches)", self._local_process_file_special_branch)     
+            
         if remote_process_file:
             self._safe_test("pyprocess:Processor:process_data (remote, single file, single branch)", self._remote_process_file)
 
@@ -244,9 +320,11 @@ class Tester:
             self._safe_test("pyprocess:Processor:get_file_list (local file list path)", self._local_get_file_list)
             self._safe_test("pyprocess:Processor:get_file_list (remote file list path)", self._remote_get_file_list)
             self._safe_test("pyprocess:Processor:get_file_list (SAM definition)", self._sam_get_file_list)
+            # self._safe_test("pyprocess:Processor:get_file_list (SAM definition)", self._sam_get_file_list_TEST)
 
         if basic_multifile:
             self._safe_test("pyprocess:Processor:process_data (basic multithread)", self._basic_multithread)
+            # self._safe_test("pyprocess:Processor:process_data (basic bad multithread)", self._basic_bad_multithread)
             self._safe_test("pyprocess:Processor:process_data (basic multiprocess)", self._basic_multiprocess)
 
         if advanced_multifile:
@@ -373,9 +451,7 @@ class Tester:
         if get_mag: 
             self._safe_test("pyvector:Vector:get_vector (local, single file, trksegs, mom)", self._get_mag, vector, data["trksegs"], "mom") 
             self._safe_test("pyvector:Vector:get_vector (local, single file, trksegs, pos)", self._get_mag, vector, data["trksegs"], "pos") 
-
             
-    
     ####### TODO: Add more test methods for plot ######
     
     def _test_plot(self):
@@ -408,9 +484,9 @@ class Tester:
         test_processor=True, 
         test_importer=True,
         test_select=True,
-        test_plot=False,
+        test_plot=True,
         test_print=True,
-        test_vector=False
+        test_vector=True
         ): 
         """Run all specified tests"""
         

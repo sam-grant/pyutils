@@ -17,19 +17,17 @@ class Processor:
     
     # def __init__(self, verbosity=1):
 
-    def __init__(self, dir_name="EventNtuple", tree_name="ntuple", use_remote=False, location="tape", schema="root", verbosity=1):
+    def __init__(self, tree_path="EventNtuple/ntuple", use_remote=False, location="tape", schema="root", verbosity=1):
         """Initialise the processor
 
         Args:
-            dir_name (str, opt): Ntuple directory in file 
-            tree_name (str, opt): Ntuple name in file directory
+            tree_path (str, opt): Path to the Ntuple in file directory. Default is "EventNtuple/ntuple"
             use_remote (bool, opt): Flag for reading remote files 
             location (str, opt): Remote files only. File location: tape (default), disk, scratch, nersc 
             schema (str, opt): Remote files only. Schema used when writing the URL: root (default), http, path, dcap, samFile
             verbosity (int, opt): Level of output detail (0: errors only, 1: info, warnings, 2: max)
         """
-        self.dir_name = dir_name
-        self.tree_name = tree_name
+        self.tree_path = tree_path
         self.use_remote = use_remote
         self.location = location
         self.schema = schema
@@ -44,7 +42,7 @@ class Processor:
             _env_manager.ensure_environment()
 
         # Print out optional args 
-        confirm_str = f"Initialised Processor:\n\tpath = '{self.dir_name}/{self.tree_name}'\n\tuse_remote = {self.use_remote}"
+        confirm_str = f"Initialised Processor:\n\tpath = '{self.tree_path}'\n\tuse_remote = {self.use_remote}"
         if use_remote:
             confirm_str += f"\n\tlocation = {self.location}\n\tschema = {self.schema}"
         confirm_str += f"\n\tverbosity={self.verbosity}"
@@ -60,6 +58,15 @@ class Processor:
             
         Returns:
             List of file paths
+        """
+
+        # Long help message for warnings about file lists of length zero 
+        help_message = f"""
+        This issue is usually caused by one of the following:
+            1. You don't have a token (trying running getToken)
+            2. The files are not staged
+            3. The file location is incorrect (currently location={self.location})
+            4. use_remote is not True, if working with /pnfs on EAF (currently remote={self.use_remote})
         """
         
         # Check if a file list path was provided
@@ -79,7 +86,7 @@ class Processor:
                 if (len(file_list) > 0):
                     self.logger.log(f"Successfully loaded file list\n\tPath: {defname}\n\tCount: {len(file_list)} files", "success")
                 else: 
-                    self.logger.log(f"File list has length {len(file_list)}", "warning")
+                    self.logger.log(f"File list has length {len(file_list)}{help_message}", "warning")
                 
                 return file_list
                 
@@ -103,7 +110,7 @@ class Processor:
                 if (len(file_list) > 0):
                     self.logger.log(f"Successfully loaded file list\n\tSAM definition: {defname}\n\tCount: {len(file_list)} files", "success")
                 else: 
-                    self.logger.log(f"File list has length {len(file_list)}", "warning")
+                    self.logger.log(f"File list has length {len(file_list)}{help_message}", "warning")
                     
                 # Return the file list
                 return file_list
@@ -182,6 +189,8 @@ class Processor:
                         
                     except Exception as e:
                         self.logger.log(f"Error processing {file_name}:\n{e}", "error")
+                        # Increment failed files on exception
+                        failed_files += 1
                         # Redraw progress bar
                         pbar.refresh()
 
@@ -252,8 +261,7 @@ class Processor:
                 importer = Importer(
                     file_name=file_name,
                     branches=branches,
-                    dir_name=self.dir_name,
-                    tree_name=self.tree_name,
+                    tree_path=self.tree_path,
                     use_remote=self.use_remote,
                     location=self.location,
                     schema=self.schema,
@@ -344,8 +352,7 @@ class Skeleton:
         
         # Data import configuration
         self.branches = []          # List of branches to import
-        self.dir_name = "EventNtuple"  # Directory in ROOT file
-        self.tree_name = "ntuple"   # Tree name in directory
+        self.tree_path = "EventNtuple/ntuple"  # Path to tree name in file directory
         self.use_remote = False     # Whether to use remote file access
         self.location = "tape"      # File location (tape, disk, scratch, nersc)
         self.schema = "root"        # URL schema for remote files
@@ -383,8 +390,7 @@ class Skeleton:
         try:
             # Create a fresh Processor for this file
             local_processor = Processor(
-                dir_name=self.dir_name,
-                tree_name=self.tree_name,
+                tree_path=self.tree_path,
                 use_remote=self.use_remote,
                 location=self.location,
                 schema=self.schema,
@@ -432,8 +438,7 @@ class Skeleton:
             
         # Initialise the processor
         processor = Processor(
-            dir_name=self.dir_name,
-            tree_name=self.tree_name,
+            tree_path=self.tree_path,
             use_remote=self.use_remote,
             location=self.location,
             schema=self.schema,
