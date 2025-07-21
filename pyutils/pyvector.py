@@ -10,6 +10,7 @@ class Vector:
 
     """ 
     Methods for handling vector operations with Awkward arrays
+    Uses: https://vector.readthedocs.io/en/latest/src/awkward.html any standard vector function can be implemented by reading this documentation.
     """
   
     def __init__(self, verbosity=1):

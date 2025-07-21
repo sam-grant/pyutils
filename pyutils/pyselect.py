@@ -2,7 +2,7 @@
 import uproot
 import awkward as ak
 import numpy as np
-from .pylogger import Logger
+from pylogger import Logger
 
 class Select:
     """
@@ -15,6 +15,7 @@ class Select:
             Args: 
                 verbosity (int, optional): Print detail level (0: minimal, 1: medium, 2: maximum). Defaults to 1. 
         """
+        print("TESTING TESTING TESTING")
         # Start logger
         self.logger = Logger( 
             print_prefix = "[pyselect]", 
@@ -46,14 +47,14 @@ class Select:
             "IPA Back" : 92,
             "OPA" : 95,
             "TSDA" : 96,
-            "TCRV" : 200       
+            "TCRV" : 200        
         }
 
     def get_surface_name(self, sid):
         """Convert an integer surface ID (sid) to a meaningful name.
         """
         return self.surface_id_map.get(sid)
-            
+        
     def is_electron(self, data):
         """ Return boolean array for electron tracks which can be used as a mask 
 
@@ -175,16 +176,39 @@ class Select:
         """
         # convert the string to the int underneath
         sid = self.get_surface_name(surface_name)
-        print(surface_name, sid)
         try:
             # Construct & return mask
-            mask = (data[branch_name]['sid']==sid) & (data[branch_name]['sindex']==sindex)
-            self.logger.log(f"Returning mask for {branch_name} with sid = {sid} and sindex = {sindex}", "success")
+            mask = (data[branch_name]['sid']==sid)# & (data[branch_name]['sindex']==sindex)
+            self.logger.log(f"Returning mask for {branch_name} with sid = {sid}", "success") #and sindex = {sindex}"
             return mask
         except Exception as e:
             self.logger.log(f"Exception in select_surface(): {e}", "error")
             return None
 
+    def has_ST(self, data):
+      """returns mask True if the event has at least 1 ST viable extrapolation
+      """
+      try:
+        trk_st  = self.select_surface(data, surface_name="ST_Foils")
+        nst_array = ak.sum(trk_st, axis=-1)
+        mask = (nst_array > 0)
+        return mask
+      except Exception as e:
+        self.logger.log(f"Exception in has_ST(): {e}", "error")
+        return None
+            
+    def has_OPA(self, data):
+      """returns mask True if the event has at no OPA viable extrapolation
+      """
+      try:
+        trk_opa  = self.select_surface(data, surface_name="OPA")
+        nopa_array = ak.sum(trk_opa, axis=-1)
+        mask = (nopa_array == 0)
+        return mask
+      except Exception as e:
+        self.logger.log(f"Exception in has_OPA(): {e}", "error")
+        return None
+  
     def is_reflected(self, data, branch_name="trksegs"):
         """ Return boolean array for reflected tracks  
         
