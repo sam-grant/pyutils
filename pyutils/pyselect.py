@@ -15,7 +15,6 @@ class Select:
             Args: 
                 verbosity (int, optional): Print detail level (0: minimal, 1: medium, 2: maximum). Defaults to 1. 
         """
-        print("TESTING TESTING TESTING")
         # Start logger
         self.logger = Logger( 
             print_prefix = "[pyselect]", 
