@@ -3,7 +3,7 @@ import uproot
 import awkward as ak
 import numpy as np
 from .pylogger import Logger
-    
+
 class Select:
     """
     Class for standard selection cuts with EventNtuple data in Awkward format
@@ -27,7 +27,33 @@ class Select:
             "mu-" : 13,
             "mu+" : -13
         }
+        
+        # SIDs see: https://github.com/Mu2e/Offline/blob/main/DataProducts/inc/SurfaceId.hh for definitions
+        self.surface_id_map = { # Storing the mapping in a dictionary
+            "TT_Front" :0,
+            "TT_Mid" : 1,
+            "TT_Back" : 2,
+            "DS_Inner" : 82,
+            "DS_Outer" : 83,
+            "ST_Front": 100,
+            "ST_Back" : 101,
+            "ST_Inner" : 102,
+            "ST_Outer" : 103,
+            "ST_Foils" : 104,
+            "ST_Wires" : 105,
+            "IPA" : 90,
+            "IPA Front" : 91,
+            "IPA Back" : 92,
+            "OPA" : 95,
+            "TSDA" : 96,
+            "TCRV" : 200        
+        }
 
+    def get_surface_name(self, sid):
+        """Convert an integer surface ID (sid) to a meaningful name.
+        """
+        return self.surface_id_map.get(sid)
+        
     def is_electron(self, data):
         """ Return boolean array for electron tracks which can be used as a mask 
 
@@ -138,24 +164,50 @@ class Select:
             self.logger.log(f"Exception in is_upstream(): {e}", "error")
             return None
 
-    def select_surface(self, data, sid, sindex=0, branch_name="trksegs"):
+    def select_surface(self, data, surface_name="TT_Front", sindex=0, branch_name="trksegs"):
         """ Return boolean array for track segments intersecting a specific surface 
         
         Args:
             data (awkward.Array): Input array containing segments branch
-            sid (int): ID of the intersected surface 
+            surface_name (str) : official name of the intersected surface 
             sindex (int, optional): Index to the intersected surface (for multi-surface elements). Defaults to 0. 
             branch_name (str, optional): Name of the segments branch for backwards compatibility. Defaults to 'trksegs'
         """
+        # convert the string to the int underneath
+        sid = self.get_surface_name(surface_name)
         try:
             # Construct & return mask
-            mask = (data[branch_name]['sid']==sid) & (data[branch_name]['sindex']==sindex)
-            self.logger.log(f"Returning mask for {branch_name} with sid = {sid} and sindex = {sindex}", "success")
+            mask = (data[branch_name]['sid']==sid)# & (data[branch_name]['sindex']==sindex)
+            self.logger.log(f"Returning mask for {branch_name} with sid = {sid}", "success") #and sindex = {sindex}"
             return mask
         except Exception as e:
             self.logger.log(f"Exception in select_surface(): {e}", "error")
             return None
 
+    def has_ST(self, data):
+      """returns mask True if the event has at least 1 ST viable extrapolation
+      """
+      try:
+        trk_st  = self.select_surface(data, surface_name="ST_Foils")
+        nst_array = ak.sum(trk_st, axis=-1)
+        mask = (nst_array > 0)
+        return mask
+      except Exception as e:
+        self.logger.log(f"Exception in has_ST(): {e}", "error")
+        return None
+            
+    def has_OPA(self, data):
+      """returns mask True if the event has at no OPA viable extrapolation
+      """
+      try:
+        trk_opa  = self.select_surface(data, surface_name="OPA")
+        nopa_array = ak.sum(trk_opa, axis=-1)
+        mask = (nopa_array == 0)
+        return mask
+      except Exception as e:
+        self.logger.log(f"Exception in has_OPA(): {e}", "error")
+        return None
+  
     def is_reflected(self, data, branch_name="trksegs"):
         """ Return boolean array for reflected tracks  
         
@@ -167,7 +219,7 @@ class Select:
         """
         try:
             # Construct track segment conditions
-            trkent = self.select_surface(data, sid=0, branch_name=branch_name)
+            trkent = self.select_surface(data, surface_name="TT_Front", branch_name=branch_name)
             upstream = self.is_upstream(data, branch_name=branch_name)
             downstream = self.is_downstream(data, branch_name=branch_name)
             # Construct condition for reflected tracks 
@@ -220,7 +272,7 @@ class Select:
     def hasTrkCrvCoincs(self, data, dt_threshold=150):
         """ simple version of the crv coincidence checker """
 
-        at_trk_front = self.select_surface(data['trkfit'], sid=0)
+        at_trk_front = self.select_surface(data['trkfit'], surface_name="TT_Front")
         
         # Get track and coincidence times
         trk_times = data["trksegs"]["time"][at_trk_front]  # events × tracks × segments
