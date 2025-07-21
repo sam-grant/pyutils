@@ -1,3 +1,5 @@
+# this is an example for looking up the true primary creating a given reconstructed event
+
 # Import external packages
 import awkward as ak
 
