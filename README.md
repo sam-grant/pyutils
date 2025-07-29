@@ -838,7 +838,10 @@ class Display:
       print(launch_display.stdout)
 ```
 </details>
-=======
+
+
+
+
 ## 3. Instructions for developers  
 
 You can develop and test `pyutils` code by creating an editable install, as follows:
