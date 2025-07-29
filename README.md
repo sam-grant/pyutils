@@ -47,9 +47,9 @@ pylogger    # Helper module for managing printouts
 
 To learn by example, follow the `pyutils` tutorial series.
 
-1. [pyutils_basics.ipynb](examples/pyutils_basics.ipynb) - Introduction to core functionality
-1. [pyutils_on_EAF.ipynb](examples/pyutils_on_EAF.ipynb) - Reading data with `pyutils` from the Elastic Analysis Facility (EAF) 
-1. [pyutils_multifile.ipynb](examples/pyutils_multifile.ipynb) - Basic parallelisation with file lists and SAM definitions, as well as complex parallelised analysis tasks using the `pyprocess` `Skeleton` template class.
+1. [pyutils_basics.ipynb](examples/notebooks/pyutils_basics.ipynb) - Introduction to core functionality
+1. [pyutils_on_EAF.ipynb](examples/notebooks/pyutils_on_EAF.ipynb) - Reading data with `pyutils` from the Elastic Analysis Facility (EAF) 
+1. [pyutils_multifile.ipynb](examples/notebooks/pyutils_multifile.ipynb) - Basic parallelisation with file lists and SAM definitions, as well as complex parallelised analysis tasks using the `pyprocess` `Skeleton` template class.
 
 
 ### 2.2 Module documentation 
@@ -791,6 +791,57 @@ class MC(builtins.object)
   
 ```
 
+</details>
+
+---
+
+#### `pydisplay`
+
+Utility for calling the EventDisplay [https://github.com/Mu2e/EventDisplay].
+
+In order to use this utility the user needs to run:
+
+```
+mu2einit
+muse setup
+```
+
+the user must have `EventDisplay` in their working area (either a clone or via the Analysis Musing). An example of how to use this script can be found in `examples/scripts/rundisplay.py` that script can in fact be used as a means to launch the display in isolation to `pyutils`.
+
+
+<details>
+<summary><strong>Click for details<strong></summary>
+
+
+```
+class Display:
+    """
+    Class for executing the EventDisplay
+    
+    Note:
+      For this to work:
+      * mu2einit
+      * muse setup
+      * assumes local copy of EventDisplay via clone or musing
+    """
+    def __init__(self, verbosity=1):
+      # Start logger
+      self.logger = Logger( 
+          print_prefix = "[pydisplay]", 
+          verbosity = verbosity
+      )
+    
+    def pick_event(self, dataset, run, subrun, event):
+      """ use pickEvent tool to extract event, run, subrun from given data set """
+      result = subprocess.run(['pickEvent', '-e','-v',str(dataset),' ',str(run)+'/'+str(subrun)+'/'+str(event)], capture_output=True, text=True)
+      print(result.stdout)
+    
+    def launch_display(self, dataset, run, subrun, event):
+      """ launches the mu2e event display 
+      """
+      launch_display = subprocess.run(['mu2e','-c','EventDisplay/examples/nominal_example.fcl', str(dataset)+'_'+str(run)+'_'+str(subrun)+'_'+str(event)+'.art'], capture_output=True, text=True)
+      print(launch_display.stdout)
+```
 </details>
 
 ## Contact
