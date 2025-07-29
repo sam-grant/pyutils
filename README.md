@@ -18,13 +18,7 @@ pyenv ana 1.2.0 # Setup a specific version
 pyenv -h # Get help (--help and pyenv with no flag will also return help)
 ```
 
-If `pyenv` does not work, please source the activation script directly, as shown below, and report the issue to Sam Grant.
-
-```
-source /cvmfs/mu2e.opensciencegrid.org/env/ana/current/bin/activate
-```
-
-Also note that `mu2einit` should be aliased to `source /cvmfs/mu2e.opensciencegrid.org/setupmu2e-art.sh` in your `~/.bashrc`.
+>**Note**: `mu2einit` should be aliased to `source /cvmfs/mu2e.opensciencegrid.org/setupmu2e-art.sh` in your `~/.my_bashrc`.
 
 See the [tutorial](https://github.com/Mu2e/Tutorial/blob/main/EAF/Docs/06-TheMu2eEnvironment.md) on GitHub and the [wiki](https://mu2ewiki.fnal.gov/wiki/Elastic_Analysis_Facility_(EAF)#The_Mu2e_environment) page for more information.
 
@@ -793,6 +787,7 @@ class MC(builtins.object)
 
 </details>
 
+
 ---
 
 #### `pydisplay`
@@ -843,7 +838,32 @@ class Display:
       print(launch_display.stdout)
 ```
 </details>
+=======
+## 3. Instructions for developers  
 
+You can develop and test `pyutils` code by creating an editable install, as follows:
+
+```
+mu2einit
+pyenv ana
+git clone https://github.com/Mu2e/pyutils.git
+cd pyutils
+pip install -e . --user 
+```
+
+To verify that this worked, run
+
+```python
+python -c "import pyutils;print(pyutils.__file__)"
+```
+
+which should return
+
+```
+/path/to/dev/area/pyutils/pyutils/__init__.py
+```
+
+Your changes will be automatically be applied to the `pyutils` installed in your environment, with no need to rerun the `pip` command, and you can import modules and classes using the same syntax as normal.
 ## Contact
 
 Reach out via Slack (#analysis-tools or #analysis-tools-devel) if you need help or would like to contribute.

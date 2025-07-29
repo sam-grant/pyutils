@@ -9,14 +9,13 @@ class Importer:
     Intended to used via by the pyprocess Processor class
     """
     
-    def __init__(self, file_name, branches, dir_name="EventNtuple", tree_name="ntuple", use_remote=False, location="tape", schema="root", verbosity=1):
+    def __init__(self, file_name, branches, tree_path="EventNtuple/ntuple", use_remote=False, location="tape", schema="root", verbosity=1):
         """Initialise the importer
         
         Args:
             file_name: Name of the file
             branches: Flat list or grouped dict of branches to import
-            dir_name: Ntuple directory in file 
-            tree_name: Ntuple name in file directory
+            tree_path (str, opt): Path to the Ntuple in file directory. Default is "EventNtuple/ntuple".
             use_remote: Flag for reading remote files 
             location: Remote files only. File location: tape (default), disk, scratch, nersc 
             schema: Remote files only. Schema used when writing the URL: root (default), http, path, dcap, samFile
@@ -24,8 +23,7 @@ class Importer:
         """
         self.file_name = file_name
         self.branches = branches
-        self.dir_name = dir_name
-        self.tree_name = tree_name
+        self.tree_path = tree_path 
         self.use_remote = use_remote
         self.location = location
         self.schema = schema
@@ -58,59 +56,65 @@ class Importer:
         
         try:
             # Access the tree
-            if self.dir_name in file and self.tree_name in file[self.dir_name]:
-                # Get tree
-                tree = file[self.dir_name][self.tree_name]
-                # Print tree info 
-                self.logger.log("Accessing branches in tree:", "max")
-                if self.verbosity > 1:
-                    tree.show(filter_name=self.branches, interpretation_width=100)
-                
-                # Result container
-                result = {}
-
-                if self.branches is None: 
-                    self.logger.log("Please provide a list of branches, or self.branches='*' to import all", "error")
-                    return None
-        
-                # Flat list
-                elif isinstance(self.branches, list):
-                    result = tree.arrays(filter_name=self.branches, library="ak")
-        
-                # Grouped dictionary
-                elif isinstance(self.branches, dict):
-                    data = {}
-                    # Get arrays per field/group
-                    for group, sub_branches in self.branches.items():
-                        data[group] = tree.arrays(filter_name=sub_branches, library="ak")
-                    # Zip them together 
-                    result = ak.zip(data) 
-        
-                # If using "*" get all branches
-                elif self.branches == "*":
-                    self.branches = [branch for branch in tree.keys()] 
-                    self.logger.log("Importing all branches", "info")
-                    # Return array 
-                    result = tree.arrays(filter_name=self.branches, library="ak")
-                    
-                else: 
-                    self.logger.log(f"Branches type {self.branches.type} not recognised", "error")
-                    return None
-                
-                if result is not None:
-                    self.logger.log(f"Imported branches", "success")
-                    self.logger.log(f"Array structure:", "max")
-                    if self.verbosity > 1:
-                        result.type.show()
+            components = self.tree_path.split('/')
+            current = file
+            # Navigate through file directory
+            for component in components:
+                if component in current:
+                    current = current[component]
                 else:
-                    self.logger.log(f"Failed to import branches", "error")           
-
-                # Return
-                return result
+                    # Handle cases where path component doesn't exist
+                    self.logger.log(f"'{component}' not found in {self.file_name}", "error")
+                    return None
+            # Set tree
+            tree = current 
+            
+            # # Print tree info 
+            # self.logger.log("Accessing branches in tree:", "max")
+            # if self.verbosity > 1:
+            #     tree.show(self.branches, interpretation_width=100)
                 
-            else:
-                self.logger.log(f"Could not find tree {self.dir_name}/{self.tree_name} in file {self.file_name}", "error")
+            # Result container
+            result = {}
+
+            if self.branches is None: 
+                self.logger.log("Please provide a list of branches, or self.branches='*' to import all", "error")
                 return None
+    
+            # Flat list
+            elif isinstance(self.branches, list):
+                result = tree.arrays(self.branches, library="ak")
+    
+            # Grouped dictionary
+            elif isinstance(self.branches, dict):
+                data = {}
+                # Get arrays per field/group
+                for group, sub_branches in self.branches.items():
+                    data[group] = tree.arrays(sub_branches, library="ak")
+                # Zip them together 
+                result = ak.zip(data) 
+    
+            # If using "*" get all branches
+            elif self.branches == "*":
+                self.branches = [branch for branch in tree.keys()] 
+                self.logger.log("Importing all branches", "info")
+                # Return array 
+                result = tree.arrays(filter_name=self.branches, library="ak")
+                
+            else: 
+                self.logger.log(f"Branches type {self.branches.type} not recognised", "error")
+                return None
+            
+            if result is not None:
+                self.logger.log(f"Imported branches", "success")
+                self.logger.log(f"Array structure:", "max")
+                if self.verbosity > 1:
+                    result.type.show()
+            else:
+                self.logger.log(f"Failed to import branches", "error")           
+
+            # Return
+            return result
     
         except Exception as e:
             self.logger.log(f"Exception getting branches in file {self.file_name}: {e}", "error")

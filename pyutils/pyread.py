@@ -75,20 +75,4 @@ class Reader:
             return self._read_local_file(file_path)
             
         except Exception as e1:
-            # If there's an error, try copying to local and opening
             self.logger.log(f"Exception while opening {file_path}: {e1}", "error")
-            self.logger.log("Retrying with local copy...", "info")
-
-            try:
-                # Setup commands
-                commands = f"mdh copy-file {file_path} -s tape -l local"
-                
-                # Execute the copy command
-                subprocess.check_output(commands, shell=True, universal_newlines=True, stderr=subprocess.DEVNULL)
-                
-                # Open the file directly after copying
-                return self._read_local_file(file_path)
-            
-            except Exception as e2:
-                self.logger.log("Failed to open local copy", "error")
-                raise Exception(f"Exception: {e2}") from e2
