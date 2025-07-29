@@ -63,7 +63,7 @@ Help information be accessed with `help(name)`, where `name` can be the module n
 Contains the `Reader` class: a utility for reading files with uproot (supports local and remote files). Called by `pyprocess`, which is the main interface for processing data.
 
 <details>
-<summary><strong>Click for details<strong></summary>
+<summary>Click for details</summary>
     
 ```
 NAME
