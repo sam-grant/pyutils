@@ -110,7 +110,7 @@ CLASSES
 Contains the `Importer` class: a utility for importing ROOT TTree branches into Awkward arrays. Called by `pyprocess`, which is the main interface for processing data.
 
 <details>
-<summary><strong>Click for details<strong></summary>
+<summary>Click for details</summary>
 
 ```
 NAME
@@ -160,7 +160,7 @@ CLASSES
 **This is the primary interface for processing data**: supports processing of single files, file lists, and SAM definitions. Contains the `Processor` class, which provides methods for producing file lists and parallel processing, where the `process_data` method provides a single entry point for these utilties. It also contains the `Skeleton` class, which provides a template class for performing complex analyses.
 
 <details>
-<summary><strong>Click for details<strong></summary>
+<summary>Click for details</summary>
 
 ```
 NAME
@@ -277,7 +277,7 @@ Tools for creating publication-quality histograms and graphs from flattened arra
 >**Note**: Does not support plotting for histogram objects. Working on resolving this.
 
 <details>
-<summary><strong>Click for details<strong></summary>
+<summary>Click for details</summary>
 
 ```
      |  Methods defined here:
@@ -467,7 +467,7 @@ Tools for creating publication-quality histograms and graphs from flattened arra
 For array visualisation, allowing the user to print out the structure of their array per event in a human-readable format
 
 <details>
-<summary><strong>Click for details<strong></summary>
+<summary>Click for details</summary>
     
 ```
 NAME
@@ -545,7 +545,7 @@ Tools for creating and managing selection cut masks.
 >**Note**: `MakeMask` and `MakeMaskList` may need revisiting; CutManager class for complex analyses coming soon. 
 
 <details>
-<summary><strong>Click for details<strong></summary>
+<summary>Click for details</summary>
 
 ```
 NAME
@@ -668,7 +668,7 @@ CLASSES
 Tools for 3D element-wise vector operations in a pure Python environment. 
 
 <details>
-<summary><strong>Click for details<strong></summary>
+<summary>Click for details</summary>
 
 ```
 NAME
@@ -718,7 +718,7 @@ Helper module for managing printouts across the `pyutils` suite.
 
 
 <details>
-<summary><strong>Click for details<strong></summary>
+<summary>Click for details</summary>
 
     
 ```
@@ -763,7 +763,7 @@ Utility for helping users to understand the MC origins of given tracks.
 
 
 <details>
-<summary><strong>Click for details<strong></summary>
+<summary>Click for details</summary>
 
 ```
 class MC(builtins.object)
@@ -810,7 +810,7 @@ the user must have `EventDisplay` in their working area (either a clone or via t
 
 
 <details>
-<summary><strong>Click for details<strong></summary>
+<summary>Click for details</summary>
 
 
 ```
