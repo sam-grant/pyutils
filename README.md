@@ -41,9 +41,9 @@ pylogger    # Helper module for managing printouts
 
 To learn by example, follow the `pyutils` tutorial series.
 
-1. [pyutils_basics.ipynb](examples/pyutils_basics.ipynb) - Introduction to core functionality
-1. [pyutils_on_EAF.ipynb](examples/pyutils_on_EAF.ipynb) - Reading data with `pyutils` from the Elastic Analysis Facility (EAF) 
-1. [pyutils_multifile.ipynb](examples/pyutils_multifile.ipynb) - Basic parallelisation with file lists and SAM definitions, as well as complex parallelised analysis tasks using the `pyprocess` `Skeleton` template class.
+1. [pyutils_basics.ipynb](examples/notebooks/pyutils_basics.ipynb) - Introduction to core functionality
+1. [pyutils_on_EAF.ipynb](examples/notebooks/pyutils_on_EAF.ipynb) - Reading data with `pyutils` from the Elastic Analysis Facility (EAF) 
+1. [pyutils_multifile.ipynb](examples/notebooks/pyutils_multifile.ipynb) - Basic parallelisation with file lists and SAM definitions, as well as complex parallelised analysis tasks using the `pyprocess` `Skeleton` template class.
 
 
 ### 2.2 Module documentation 
@@ -57,7 +57,7 @@ Help information be accessed with `help(name)`, where `name` can be the module n
 Contains the `Reader` class: a utility for reading files with uproot (supports local and remote files). Called by `pyprocess`, which is the main interface for processing data.
 
 <details>
-<summary><strong>Click for details<strong></summary>
+<summary>Click for details</summary>
     
 ```
 NAME
@@ -104,7 +104,7 @@ CLASSES
 Contains the `Importer` class: a utility for importing ROOT TTree branches into Awkward arrays. Called by `pyprocess`, which is the main interface for processing data.
 
 <details>
-<summary><strong>Click for details<strong></summary>
+<summary>Click for details</summary>
 
 ```
 NAME
@@ -154,7 +154,7 @@ CLASSES
 **This is the primary interface for processing data**: supports processing of single files, file lists, and SAM definitions. Contains the `Processor` class, which provides methods for producing file lists and parallel processing, where the `process_data` method provides a single entry point for these utilties. It also contains the `Skeleton` class, which provides a template class for performing complex analyses.
 
 <details>
-<summary><strong>Click for details<strong></summary>
+<summary>Click for details</summary>
 
 ```
 NAME
@@ -271,7 +271,7 @@ Tools for creating publication-quality histograms and graphs from flattened arra
 >**Note**: Does not support plotting for histogram objects. Working on resolving this.
 
 <details>
-<summary><strong>Click for details<strong></summary>
+<summary>Click for details</summary>
 
 ```
      |  Methods defined here:
@@ -461,7 +461,7 @@ Tools for creating publication-quality histograms and graphs from flattened arra
 For array visualisation, allowing the user to print out the structure of their array per event in a human-readable format
 
 <details>
-<summary><strong>Click for details<strong></summary>
+<summary>Click for details</summary>
     
 ```
 NAME
@@ -539,7 +539,7 @@ Tools for creating and managing selection cut masks.
 >**Note**: `MakeMask` and `MakeMaskList` may need revisiting; CutManager class for complex analyses coming soon. 
 
 <details>
-<summary><strong>Click for details<strong></summary>
+<summary>Click for details</summary>
 
 ```
 NAME
@@ -662,7 +662,7 @@ CLASSES
 Tools for 3D element-wise vector operations in a pure Python environment. 
 
 <details>
-<summary><strong>Click for details<strong></summary>
+<summary>Click for details</summary>
 
 ```
 NAME
@@ -712,7 +712,7 @@ Helper module for managing printouts across the `pyutils` suite.
 
 
 <details>
-<summary><strong>Click for details<strong></summary>
+<summary>Click for details</summary>
 
     
 ```
@@ -757,7 +757,7 @@ Utility for helping users to understand the MC origins of given tracks.
 
 
 <details>
-<summary><strong>Click for details<strong></summary>
+<summary>Click for details</summary>
 
 ```
 class MC(builtins.object)
@@ -787,6 +787,61 @@ class MC(builtins.object)
 
 </details>
 
+
+---
+
+#### `pydisplay`
+
+Utility for calling the EventDisplay [https://github.com/Mu2e/EventDisplay].
+
+In order to use this utility the user needs to run:
+
+```
+mu2einit
+muse setup
+```
+
+the user must have `EventDisplay` in their working area (either a clone or via the Analysis Musing). An example of how to use this script can be found in `examples/scripts/rundisplay.py` that script can in fact be used as a means to launch the display in isolation to `pyutils`.
+
+
+<details>
+<summary>Click for details</summary>
+
+
+```
+class Display:
+    """
+    Class for executing the EventDisplay
+    
+    Note:
+      For this to work:
+      * mu2einit
+      * muse setup
+      * assumes local copy of EventDisplay via clone or musing
+    """
+    def __init__(self, verbosity=1):
+      # Start logger
+      self.logger = Logger( 
+          print_prefix = "[pydisplay]", 
+          verbosity = verbosity
+      )
+    
+    def pick_event(self, dataset, run, subrun, event):
+      """ use pickEvent tool to extract event, run, subrun from given data set """
+      result = subprocess.run(['pickEvent', '-e','-v',str(dataset),' ',str(run)+'/'+str(subrun)+'/'+str(event)], capture_output=True, text=True)
+      print(result.stdout)
+    
+    def launch_display(self, dataset, run, subrun, event):
+      """ launches the mu2e event display 
+      """
+      launch_display = subprocess.run(['mu2e','-c','EventDisplay/examples/nominal_example.fcl', str(dataset)+'_'+str(run)+'_'+str(subrun)+'_'+str(event)+'.art'], capture_output=True, text=True)
+      print(launch_display.stdout)
+```
+</details>
+
+
+
+
 ## 3. Instructions for developers  
 
 You can develop and test `pyutils` code by creating an editable install, as follows:
@@ -812,7 +867,6 @@ which should return
 ```
 
 Your changes will be automatically be applied to the `pyutils` installed in your environment, with no need to rerun the `pip` command, and you can import modules and classes using the same syntax as normal.
-
 ## Contact
 
 Reach out via Slack (#analysis-tools or #analysis-tools-devel) if you need help or would like to contribute.
