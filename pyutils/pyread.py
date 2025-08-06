@@ -17,20 +17,22 @@ class Reader:
             schema (str, opt): Schema for remote file path: root (default), http, path , dcap, samFile
             verbosity (int, opt): Level of output detail (0: errors only, 1: info & warnings, 2: max)
         """
-        self.use_remote = use_remote # access files from outside NFS
+        self.use_remote = use_remote # access files on /pnfs from EAF
         self.location = location
         self.schema = schema
-        
-        self.logger = Logger( # Start logger
+
+        # Start logger 
+        self.logger = Logger( 
             print_prefix = "[pyread]", 
             verbosity = verbosity
         )
+
         # Setup and validation for remote reading
         if self.use_remote:
             #  Ensure mdh environment
             _env_manager.ensure_environment()  
             # Check arguments
-            valid_locations = ["tape", "disk", "scratch", "nersc"]
+            valid_locations = ["tape", "disk", "scratch", "best"]
             if self.location not in valid_locations:
                 self.logger.log(f"Location '{location}' may not be valid. Expected one of {valid_locations}", "warning")
             valid_schemas = ["root", "http", "path", "dcap", "samFile"]
@@ -58,21 +60,61 @@ class Reader:
             self.logger.log(f"Opened {file_path}", "success")
             return file
         except Exception as e:
-            self.logger.log(f"Error while opening {file_path}", "error")
-            raise Exception(f"\tException: {e}") from e
+            self.logger.log(f"Exception while opening {file_path}: {e}", "warning")
+            raise # propagate exception up
+
+    def _check_file_location(self, file_path):
+        """Fallback helper to find the file location the file
+        """ 
+        self.logger.log(f"Fallback: checking file location='{self.location}'", "info")
+        try:
+            # Locate the file
+            commands = f"samweb locate-file {file_path}"
+            sam_file_path = subprocess.check_output(commands, shell=True, text=True, stderr=subprocess.DEVNULL).strip() 
+            # Run checks
+            if "tape" in sam_file_path and self.location != "tape":
+                self.logger.log(f"Files found on 'tape', retrying", "success")
+                self.location = "tape"
+            elif "persistent" in sam_file_path and self.location != "disk":
+                self.logger.log(f"Files found on 'disk', retrying", "success")
+                self.location = "disk"
+            elif "scratch" in sam_file_path and self.location != "scratch":
+                self.logger.log(f"Files found on 'scratch', retrying", "success")
+                self.location = "scratch"
+            else:
+                self.logger.log(f"Files not found on 'tape', 'disk', or 'scratch'", "warning")
+                
+        except Exception as e:
+            self.logger.log(f"Error checking file location: {e}", "error")
+            raise
     
-    def _read_remote_file(self, file_path, location="tape", schema="root"):
+    def _read_remote_file(self, file_path):
         """Open a file from /pnfs via mdh"""
         self.logger.log(f"Opening remote file: {file_path}", "info")
-        
-        try:
+
+        # Nested helper 
+        def _get_file():
             # Setup commands
             commands = f"mdh print-url {file_path} -l {self.location} -s {self.schema}"
             # Execute commands
-            file_path = subprocess.check_output(commands, shell=True, universal_newlines=True, stderr=subprocess.DEVNULL).strip() 
-            self.logger.log(f"Created file path: {file_path}", "info")
-            # Open the file using the xroot URL
-            return self._read_local_file(file_path)
-            
-        except Exception as e1:
-            self.logger.log(f"Exception while opening {file_path}: {e1}", "error")
+            this_file_path = subprocess.check_output(commands, shell=True, universal_newlines=True, stderr=subprocess.DEVNULL).strip() 
+            # Log
+            self.logger.log(f"Created file path: {this_file_path}", "info")
+            # Read
+            file = self._read_local_file(this_file_path)
+            # Return 
+            return file
+
+        # Try opening the file
+        try:
+            file = _get_file()
+            return file
+        except: 
+            # Fallback and check location
+            self._check_file_location(file_path)
+            try:
+                file = _get_file()
+                return file
+            except Exception as e: # Fallback failed
+                self.logger.log(f"Fallback failed... Exception while opening {file_path}: {e}", "warning")
+                raise # propagate exception up
