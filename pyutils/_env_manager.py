@@ -38,7 +38,7 @@ def setup_environment():
                 return False
                 
             # Step 2: Setup mu2e environment and get all environmentals
-            setup_cmd = "source /cvmfs/mu2e.opensciencegrid.org/setupmu2e-art.sh; muse setup ops; env"
+            setup_cmd = "source /cvmfs/mu2e.opensciencegrid.org/setupmu2e-art.sh; muse setup ops; setup dhtools; env"
             
             result = subprocess.check_output(
                 setup_cmd, 

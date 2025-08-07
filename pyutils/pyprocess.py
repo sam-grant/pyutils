@@ -7,6 +7,7 @@ import inspect
 import tqdm
 import gc
 from . import _env_manager # Environment manager
+from .pyread import Reader # For reading files
 from .pyimport import Importer # For importing branches
 from .pylogger import Logger # Messaging/logging
 
@@ -123,6 +124,30 @@ class Processor:
             self.logger.log("Error: Either 'defname' or 'file_list_path' must be provide", "error")
             return []  
 
+    def _preprocess_test(self, file_list):
+        """Read the first file to detect issues before processing
+
+        Workers are silenced, so this can be useful
+        """
+        if not file_list:
+            return
+
+        self.logger.log("Running preprocess test", "info")
+        
+        # Sample first file
+        sample_file_name = file_list[0]
+
+        # Start a reader 
+        reader = Reader(use_remote=True, location=self.location, schema=self.schema, verbosity=self.verbosity)
+
+        # Read the file
+        try:
+            sample_file = reader._read_remote_file(sample_file_name)
+            return True
+        except Exception as e:
+            self.logger.log(f"Exception during preprocessing {e}", "error")
+            return False
+
     def _process_files_parallel(self, file_list, process_func, max_workers=None, use_processes=False):
         """Internal function to parallelise file operations with given a process function
         
@@ -138,6 +163,13 @@ class Processor:
         if not file_list:
             self.logger.log("Error: Empty file list provided", "error")
             return None
+
+        # Run test
+        if self._preprocess_test(file_list):
+            self.logger.log("Preprocess test passed", "success")
+        else:
+            self.logger.log("Preprocess test failed", "error")
+            return None            
     
         if max_workers is None:
             # Return a sensible default for max threads
@@ -209,8 +241,7 @@ class Processor:
         
         # Return the results
         return results
-
-    # custom_process_func -> process_func?
+            
     def process_data(self, file_name=None, file_list_path=None, defname=None, branches=None, max_workers=None, custom_process_func=None, use_processes=False):
         """Process the data 
         
@@ -232,7 +263,7 @@ class Processor:
         file_sources = sum(x is not None for x in [file_name, defname, file_list_path])
         if file_sources != 1: 
             self.logger.log(f"Please provide exactly one of 'file_name', 'file_list_path', or defname'", "error")
-            return None
+            return None           
 
         # Validate custom_process_func if provided
         if custom_process_func is not None:
@@ -272,26 +303,14 @@ class Processor:
         else: # Use the custom process function  
             process_func = custom_process_func
 
-        # Handle a single file
-        
+        # Handle the single file case
         if file_name: 
-            try: 
-                result = process_func(file_name) # Run the process
-                if self.verbosity > 0:
-                    self.logger.log(f"Returning result from process on {file_name}", "success")
-                return result 
-            except Exception as e:
-                self.logger.log(f"Error processing {file_name}:\n{e}", "error")
-                return None
-            
-        # Now handle multiple files
+            result = process_func(file_name) # Run the process
+            self.logger.log(f"Completed process on {file_name}", "success")
+            return result 
 
         # Prepare file list
-        file_list = []
-        if file_list_path: # Get file list from file list path 
-            file_list = self.get_file_list(file_list_path=file_list_path)
-        elif defname: # Get file list from SAM definition
-            file_list = self.get_file_list(defname=defname)
+        file_list = self.get_file_list(file_list_path=file_list_path, defname=defname)
 
         # Get list of results 
         results = self._process_files_parallel(
@@ -319,6 +338,7 @@ class Processor:
 
         return results
 
+# -----------------------------------------------------------------------
 # Template for creating a custom processors with the Processor framework
 # -----------------------------------------------------------------------
 
