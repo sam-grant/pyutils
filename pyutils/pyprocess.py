@@ -138,11 +138,11 @@ class Processor:
         sample_file_name = file_list[0]
 
         # Start a reader 
-        reader = Reader(use_remote=True, location=self.location, schema=self.schema, verbosity=self.verbosity)
+        reader = Reader(use_remote=self.use_remote, location=self.location, schema=self.schema, verbosity=self.verbosity)
 
         # Read the file
         try:
-            sample_file = reader._read_remote_file(sample_file_name)
+            sample_file = reader.read_file(sample_file_name)
             return True
         except Exception as e:
             self.logger.log(f"Exception during preprocessing {e}", "error")
@@ -263,7 +263,7 @@ class Processor:
         file_sources = sum(x is not None for x in [file_name, defname, file_list_path])
         if file_sources != 1: 
             self.logger.log(f"Please provide exactly one of 'file_name', 'file_list_path', or defname'", "error")
-            return None           
+            return None
 
         # Validate custom_process_func if provided
         if custom_process_func is not None:
@@ -276,7 +276,7 @@ class Processor:
             sig = inspect.signature(custom_process_func)
             if len(sig.parameters) != 1:
                 self.logger.log(f"custom_process_func must take exactly one argument (file_name)", "error")
-                return None        
+                return None
 
         # Verbosity for worker threads is the same as Processor 
         worker_verbosity = self.verbosity 
@@ -333,6 +333,7 @@ class Processor:
                     results.type.show()
             else:
                 self.logger.log(f"Concatenated array is None (failed to import branches)", "error")
+                return None
         else: 
             self.logger.log(f"Returning {len(results)} results", "info")
 

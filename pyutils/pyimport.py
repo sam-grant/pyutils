@@ -40,7 +40,7 @@ class Importer:
             use_remote=self.use_remote,
             location=self.location,
             schema=self.schema,
-            verbosity=self.verbosity    
+            verbosity=self.verbosity
         )
         
     def import_branches(self):

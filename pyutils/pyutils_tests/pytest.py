@@ -201,6 +201,16 @@ class Tester:
             branches=["event"]
         )
 
+    def _local_process_file_wrong_loc(self):
+        processor = Processor(
+            use_remote=False,
+            verbosity=self.verbosity,
+            location="scratch" # INCORRECT
+        )
+        return processor.process_data(
+            file_name=self.local_file_path,
+            branches=["event"]
+        )
 
     def _local_process_wb_file(self): # WB tree structure
         processor = Processor(
@@ -229,6 +239,27 @@ class Tester:
             branches=["event"]
         )
 
+    def _remote_process_file(self):
+        processor = Processor(
+            use_remote=True,
+            verbosity=self.verbosity
+        )
+        return processor.process_data(
+            file_name=self.remote_file_name,
+            branches=["event"]
+        )
+
+    def _remote_process_file_wrong_loc(self):
+        processor = Processor(
+            use_remote=True,
+            verbosity=self.verbosity,
+            location="scratch" # INCORRECT
+        )
+        return processor.process_data(
+            file_name=self.remote_file_name,
+            branches=["event"]
+        )
+        
     def _local_get_file_list(self):
         processor = Processor(verbosity=self.verbosity)
         return processor.get_file_list(file_list_path=self.local_file_list)
@@ -306,6 +337,7 @@ class Tester:
         """Test pyprocess module"""
         if local_process_file:
             self._safe_test("pyprocess:Processor:process_data (local, single file, single branch)", self._local_process_file)
+            self._safe_test("pyprocess:Processor:process_data (local, single file, single branch, wrong file location)", self._local_process_file_wrong_loc)
 
         if local_process_wb_file:
             self._safe_test("pyprocess:Processor:process_data (local, single WB file, single branch)", self._local_process_wb_file)            
@@ -315,6 +347,7 @@ class Tester:
             
         if remote_process_file:
             self._safe_test("pyprocess:Processor:process_data (remote, single file, single branch)", self._remote_process_file)
+            self._safe_test("pyprocess:Processor:process_data (remote, single file, single branch, wrong file location)", self._remote_process_file_wrong_loc)
 
         if get_file_list:
             self._safe_test("pyprocess:Processor:get_file_list (local file list path)", self._local_get_file_list)
