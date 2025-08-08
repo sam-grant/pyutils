@@ -1,7 +1,13 @@
 # Sam Grant
 # May 2025
 # Tests for pyutils modules 
-# TODO: use unittest
+
+# For safety:
+# Use the 'spawn' start method to ensure each worker process starts in a fresh Python interpreter.
+# This avoids inheriting state from the parent (as happens with 'fork'), which can cause subtle bugs
+# with threads, open files, or shared resources. Slightly slower, but much safer for complex code.
+import multiprocessing as mp
+mp.set_start_method("spawn", force=True)
 
 # pyutils classes
 from pyutils.pyread import Reader                  # Data reading 
@@ -12,6 +18,8 @@ from pyutils.pyprint import Print                  # Array visualisation
 from pyutils.pyselect import Select                # Data selection and cut management 
 from pyutils.pyvector import Vector                # Element wise vector operations
 from pyutils.pylogger import Logger                # Printout manager
+
+import gc
 
 # Cannot be nested (for multiprocessing)!
 class MyProcessor(Skeleton):
@@ -56,8 +64,7 @@ class Tester:
         self.test_count += 1
         try:
             self.logger.log(f"Running test: {test_name}", "test")
-            result = test_function(*args, **kwargs)
-            
+            result = test_function(*args, **kwargs)            
             if expect_return and (result is None or (hasattr(result, '__len__') and len(result) == 0)):
                 self.logger.log(f"FAILED: {test_name}: returned no results", "error")
                 self.error_count += 1
@@ -71,6 +78,9 @@ class Tester:
             self.error_count += 1
             self.failed_tests.append(test_name)
             return False
+        finally:
+            gc.collect()
+            del result
     
     ###### pyread ######
     
@@ -339,7 +349,8 @@ class Tester:
         processor = Processor(
             verbosity=self.verbosity,
             use_remote=True,
-            worker_verbosity=2
+            worker_verbosity=2,
+            location="disk"
         )
         return processor.process_data(
             file_list_path=self.remote_file_list,
@@ -357,10 +368,10 @@ class Tester:
 
     def _test_processor(
         self, 
-        local_process_file=False,
-        local_process_wb_file=False,
-        local_process_file_special_branch=False,
-        remote_process_file=False,
+        local_process_file=True,
+        local_process_wb_file=True,
+        local_process_file_special_branch=True,
+        remote_process_file=True,
         get_file_list=True,
         basic_multifile=True,
         advanced_multifile=True
@@ -378,7 +389,7 @@ class Tester:
             
         if remote_process_file:
             self._safe_test("pyprocess:Processor:process_data (remote, single file, single branch)", self._remote_process_file)
-            self._safe_test("pyprocess:Processor:process_data (remote, single file, single branch, wrong file location)", self._remote_process_file_wrong_loc)
+            # self._safe_test("pyprocess:Processor:process_data (remote, single file, single branch, wrong file location)", self._remote_process_file_wrong_loc)
 
         if get_file_list:
             self._safe_test("pyprocess:Processor:get_file_list (local file list path)", self._local_get_file_list)
@@ -387,8 +398,8 @@ class Tester:
             # self._safe_test("pyprocess:Processor:get_file_list (SAM definition)", self._sam_get_file_list_TEST)
 
         if basic_multifile:
-            # self._safe_test("pyprocess:Processor:process_data (basic multithread)", self._basic_multithread)
-            # self._safe_test("pyprocess:Processor:process_data (basic remote multithread)", self._basic_remote_multithread)
+            self._safe_test("pyprocess:Processor:process_data (basic multithread)", self._basic_multithread)
+            self._safe_test("pyprocess:Processor:process_data (basic remote multithread)", self._basic_remote_multithread)
             # self._safe_test("pyprocess:Processor:process_data (basic bad multithread)", self._basic_bad_multithread)
             self._safe_test("pyprocess:Processor:process_data (basic multiprocess)", self._basic_multiprocess)
             self._safe_test("pyprocess:Processor:process_data (basic remote multiprocess)", self._basic_remote_multiprocess)

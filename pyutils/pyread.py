@@ -2,11 +2,11 @@
 import uproot
 import os
 import subprocess
-from . import _env_manager # Environment manager
-from .pylogger import Logger # Messaging/logging
+from . import _env_manager
+from .pylogger import Logger
 
 class Reader:
-    """Unified interface for accessing files, either locally or remotely"""
+    """Unified interface for reading files, either locally or remotely"""
     
     def __init__(self, use_remote=False, location="tape", schema="root", verbosity=1):
         """Initialise the reader
@@ -64,35 +64,10 @@ class Reader:
             raise # propagate exception up
 
     def _read_remote_file(self, file_path):
-        """Open a file from /pnfs via mdh with automatic location fallback"""
+        """Open a file from /pnfs via mdh - NO FALLBACKS"""
         self.logger.log(f"Opening remote file: {file_path}", "info")
-        
-        # Try with current location first
-        try:
-            return self._attempt_remote_read(file_path, self.location)
-        except Exception as e:
-            self.logger.log(f"Failed with location '{self.location}': {e}", "info")
-        
-        # Fallback: try other locations
-        fallback_locations = self.valid_locations
-        fallback_locations.remove(self.location) if self.location in fallback_locations else None
-        
-        for location in fallback_locations:
-            try:
-                self.logger.log(f"Trying fallback location '{location}'", "info")
-                file = self._attempt_remote_read(file_path, location)
-                
-                # Success with different location
-                self.logger.log(f"Success with location '{location}'", "success")
-                return file
-                
-            except Exception as e:
-                self.logger.log(f"Fallback location '{location}' failed: {e}", "info")
-                continue
-        
-        # All attempts failed
-        self.logger.log(f"Could not open {file_path} from any location", "error")
-        raise 
+        # Try the specified location 
+        return self._attempt_remote_read(file_path, self.location)
     
     def _attempt_remote_read(self, file_path, location):
         """Attempt to read remote file with specific location"""
@@ -110,3 +85,7 @@ class Reader:
         
         # Read the file
         return self._read_file(this_file_path)
+
+        # Previously I had a fallback method which tried to read from multiple locations,
+        # but I think it is far easier to debug if you simply let the process fail than
+        # to deal with fallout from overwhelming the network with subprocess calls 

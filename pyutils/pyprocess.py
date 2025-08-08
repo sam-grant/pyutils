@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 import os
 import subprocess
+import gc
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 import awkward as ak
 import inspect
@@ -205,6 +206,8 @@ class Processor:
                         failed_files += 1
                         # Redraw progress bar
                         pbar.refresh()
+                        # Propagete
+                        raise e
 
                     finally:
                         # Always update the progress bar, regardless of success or failure
@@ -214,6 +217,11 @@ class Processor:
                             "successful": completed_files, 
                             "failed": failed_files 
                         })
+                        # Safety cleanup
+                        gc.collect()
+
+                # More safety cleanup
+                del futures
         
         # Return the results
         return results
@@ -408,7 +416,7 @@ class Skeleton:
             
         except Exception as e:
             self.logger.log(f"Error processing {file_name}: {e}", "error")
-            return None
+            raise e # propagate exception
             
     def execute(self):
         """Run the processor on the configured files
