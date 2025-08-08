@@ -77,9 +77,10 @@ class Processor:
         help_message = f"""
         Common causes:
             - Authetification issues (trying running getToken)
+            - Invalid SAM definition (defname='{defname}')
             - The files are not staged
-            - Incorrect file location is incorrect (currently location={self.location})
-            - use_remote is not True, if not working with local files (currently remote={self.use_remote})
+            - Incorrect file location (location='{self.location}')
+            - use_remote is not True, if not working with local files (remote='{self.use_remote}')
         """
         
         # Check if a file list path was provided
