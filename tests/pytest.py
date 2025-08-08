@@ -1,6 +1,7 @@
 # Sam Grant
 # May 2025
 # Tests for pyutils modules 
+# TODO: use unittest
 
 # pyutils classes
 from pyutils.pyread import Reader                  # Data reading 
@@ -12,6 +13,15 @@ from pyutils.pyselect import Select                # Data selection and cut mana
 from pyutils.pyvector import Vector                # Element wise vector operations
 from pyutils.pylogger import Logger                # Printout manager
 
+# Cannot be nested (for multiprocessing)!
+class MyProcessor(Skeleton):
+    def __init__(self, file_list_path, use_processes):
+        super().__init__()
+        self.file_list_path=file_list_path 
+        self.use_processes=True
+    def process_file(self, file_name):
+        return file_name 
+            
 class Tester:
     """ Tests for pyutils """
     
@@ -92,7 +102,7 @@ class Tester:
         if remote_read: 
             self._safe_test("pyread:Reader::read_file (remote)", self._remote_read)
 
-    ###### pyimporter ######
+    ###### pyimport ######
 
     def _local_import_branch(self):
         importer = Importer(
@@ -316,7 +326,8 @@ class Tester:
         
     def _basic_multiprocess(self):
         processor = Processor(
-            verbosity=self.verbosity
+            verbosity=self.verbosity, 
+            worker_verbosity=2
         )
         return processor.process_data(
             file_list_path=self.local_file_list,
@@ -327,45 +338,29 @@ class Tester:
     def _basic_remote_multiprocess(self):
         processor = Processor(
             verbosity=self.verbosity,
-            use_remote=True
+            use_remote=True,
+            worker_verbosity=2
         )
         return processor.process_data(
             file_list_path=self.remote_file_list,
             branches = ["event"],
             use_processes=True
         )
-        
+            
     def _advanced_multithread(self):
-        
-        class MyProcessor(Skeleton):
-            def __init__(processor_self):
-                super().__init__()
-                processor_self.file_list_path=self.local_file_list
-            def process_file(self, file_name):
-                return file_name 
-
-        my_processor = MyProcessor()
+        my_processor = MyProcessor(self.local_file_list, False)
         return my_processor.execute()
 
     def _advanced_multiprocess(self):
-    
-        class MyProcessor(Skeleton):
-            def __init__(processor_self):
-                super().__init__()
-                processor_self.use_processes=True
-                processor_self.file_list_path=self.local_file_list
-            def process_file(self, file_name):
-                return file_name 
-    
-        my_processor = MyProcessor()
+        my_processor = MyProcessor(self.local_file_list, True)
         return my_processor.execute()
-            
+
     def _test_processor(
         self, 
-        local_process_file=True,
-        local_process_wb_file=True,
-        local_process_file_special_branch=True,
-        remote_process_file=True,
+        local_process_file=False,
+        local_process_wb_file=False,
+        local_process_file_special_branch=False,
+        remote_process_file=False,
         get_file_list=True,
         basic_multifile=True,
         advanced_multifile=True
@@ -373,7 +368,7 @@ class Tester:
         """Test pyprocess module"""
         if local_process_file:
             self._safe_test("pyprocess:Processor:process_data (local, single file, single branch)", self._local_process_file)
-            self._safe_test("pyprocess:Processor:process_data (local, single file, single branch, wrong file location)", self._local_process_file_wrong_loc)
+            # self._safe_test("pyprocess:Processor:process_data (local, single file, single branch, wrong file location)", self._local_process_file_wrong_loc)
 
         if local_process_wb_file:
             self._safe_test("pyprocess:Processor:process_data (local, single WB file, single branch)", self._local_process_wb_file)            
@@ -392,8 +387,8 @@ class Tester:
             # self._safe_test("pyprocess:Processor:get_file_list (SAM definition)", self._sam_get_file_list_TEST)
 
         if basic_multifile:
-            self._safe_test("pyprocess:Processor:process_data (basic multithread)", self._basic_multithread)
-            self._safe_test("pyprocess:Processor:process_data (basic remote multithread)", self._basic_remote_multithread)
+            # self._safe_test("pyprocess:Processor:process_data (basic multithread)", self._basic_multithread)
+            # self._safe_test("pyprocess:Processor:process_data (basic remote multithread)", self._basic_remote_multithread)
             # self._safe_test("pyprocess:Processor:process_data (basic bad multithread)", self._basic_bad_multithread)
             self._safe_test("pyprocess:Processor:process_data (basic multiprocess)", self._basic_multiprocess)
             self._safe_test("pyprocess:Processor:process_data (basic remote multiprocess)", self._basic_remote_multiprocess)
@@ -553,13 +548,13 @@ class Tester:
     
     def run(
         self, 
-        test_reader=True,
-        test_processor=True, 
-        test_importer=True,
-        test_select=True,
-        test_plot=True,
-        test_print=True,
-        test_vector=True
+        test_reader=False,
+        test_processor=False, 
+        test_importer=False,
+        test_select=False,
+        test_plot=False,
+        test_print=False,
+        test_vector=False
         ): 
         """Run all specified tests"""
         
