@@ -27,21 +27,23 @@ def _worker_func(file_name, branches, tree_path, use_remote, location, schema, v
 class Processor:
     """Interface for processing files or datasets"""
     
-    def __init__(self, tree_path="EventNtuple/ntuple", use_remote=False, location="tape", schema="root", verbosity=1):
+    def __init__(self, tree_path="EventNtuple/ntuple", use_remote=False, location="tape", schema="root", verbosity=1, worker_verbosity=0):
         """Initialise the processor
 
         Args:
-            tree_path (str, opt): Path to the Ntuple in file directory. Default is "EventNtuple/ntuple"
-            use_remote (bool, opt): Flag for reading remote files 
-            location (str, opt): Remote files only. File location: tape (default), disk, scratch, nersc 
-            schema (str, opt): Remote files only. Schema used when writing the URL: root (default), http, path, dcap, samFile
-            verbosity (int, opt): Level of output detail (0: errors only, 1: info, warnings, 2: max)
+            tree_path (str, opt): Path to the Ntuple in file directory. Defaults to "EventNtuple/ntuple"
+            use_remote (bool, opt): If not using local files. Defaults to False. 
+            location (str, opt): Remote file location. Options are tape (default), disk, scratch, or nersc. 
+            schema (str, opt): Remote file XRootD schema. Options are root (default), http, path, dcap, or samFile.
+            verbosity (int, opt): Level of output detail (0: errors only, 1: info, warnings, 2: max). Defaults to 1.
+            worker_verbosity (int, opt): Verbosity for work processes. Defaults to 0. Level of output detail (0: errors only, 1: info, warnings, 2: max)
         """
         self.tree_path = tree_path
         self.use_remote = use_remote
         self.location = location
         self.schema = schema
         self.verbosity = verbosity
+        self.worker_verbosity = worker_verbosity
 
         self.logger = Logger( # Start logger
             print_prefix = "[pyprocess]", 
@@ -251,12 +253,6 @@ class Processor:
             if len(sig.parameters) != 1:
                 self.logger.log(f"custom_worker_func must take exactly one argument (file_name)", "error")
                 return None
-        # Verbosity for worker threads is the same as Processor 
-        worker_verbosity = self.verbosity 
-        
-        # Unless we have multiple files
-        if file_name is None:
-            worker_verbosity = 0
             
         # Set up process function
         if custom_worker_func is None: # Then use the default function
@@ -267,7 +263,7 @@ class Processor:
                 use_remote=self.use_remote,
                 location=self.location,
                 schema=self.schema,
-                verbosity=worker_verbosity
+                verbosity=0 if file_name is None else self.worker_verbosity # multifile only
             )
         else: # Use the custom process function  
             worker_func = custom_worker_func
@@ -318,12 +314,14 @@ class Skeleton:
     This template demonstrates how to create a class to run
     custom analysis jobs with the Processor framework 
     
-    To use this skeleton:
-    1. Either initilaise the entire class or pass it as an argument to your Processor class
-    2. Customize the __init__ method with your configuration
-    3. Implement your processing logic in the process method
-    4. Add any additional helper methods you need
-    5. Override methods as needed
+    Using Skeleton:
+        - Pass it as an argument to your custom Processor class
+        - Customise the __init__ method with your configuration
+        - Implement your processing logic in the process_file method
+        - Add any additional helper methods you need
+        - Override methods as needed
+
+    Note: If using multiprocessing (not threading), the processor class must NOT be nested inside another object!
     """
     
     def __init__(self, verbosity=1):
