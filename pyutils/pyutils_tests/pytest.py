@@ -25,13 +25,13 @@ class Tester:
         self.failed_tests = []
 
         # Test files
-        self.local_file_path = "/exp/mu2e/data/users/sgrant/pyutils-test/TestFiles/nts.mu2e.CeEndpointOnSpillTriggered.MDC2020aq_best_v1_3_v06_03_00.001210_00000699.root"
-        self.local_wb_file_path = "/exp/mu2e/data/users/sgrant/pyutils-test/TestFiles/rec.mu2e.CRV_wideband_cosmics.CRVWB-000-012-000.000105_001.root"
+        self.local_file_path = "/exp/mu2e/data/users/sgrant/pyutils-test/files/nts.mu2e.CeEndpointOnSpillTriggered.MDC2020aq_best_v1_3_v06_03_00.001210_00000699.root"
+        self.local_wb_file_path = "/exp/mu2e/data/users/sgrant/pyutils-test/files/rec.mu2e.CRV_wideband_cosmics.CRVWB-000-012-000.000105_001.root"
         self.remote_file_name = "nts.mu2e.CeEndpointOnSpillTriggered.MDC2020aq_best_v1_3_v06_03_00.001210_00000699.root"
         self.remote_wideband_file_name = "rec.mu2e.CRV_wideband_cosmics.CRVWB-000-012-000.000105_001.root" 
-        self.local_file_list = "/exp/mu2e/data/users/sgrant/pyutils-test/TestFileLists/local_file_list.txt"
-        self.bad_local_file_list = "/exp/mu2e/data/users/sgrant/pyutils-test/TestFileLists/bad_local_file_list.txt"
-        self.remote_file_list = "/exp/mu2e/data/users/sgrant/pyutils-test/TestFileLists/remote_file_list.txt"
+        self.local_file_list = "/exp/mu2e/data/users/sgrant/pyutils-test/filelists/local_file_list.txt"
+        self.bad_local_file_list = "/exp/mu2e/data/users/sgrant/pyutils-test/filelists/bad_local_file_list.txt"
+        self.remote_file_list = "/exp/mu2e/data/users/sgrant/pyutils-test/filelists/remote_file_list.txt"
         self.defname = "nts.mu2e.CeEndpointOnSpillTriggered.MDC2020aq_best_v1_3_v06_03_00.root"
         
         # Setup logger 
@@ -294,6 +294,17 @@ class Tester:
             branches = ["event"]
         )
 
+    def _basic_remote_multithread(self):
+        processor = Processor(
+            location="disk",
+            verbosity=self.verbosity,
+            use_remote=True
+        )
+        return processor.process_data(
+            file_list_path=self.remote_file_list,
+            branches = ["event"]
+        )
+
     def _basic_bad_multithread(self):
         processor = Processor(
             verbosity=self.verbosity
@@ -309,9 +320,21 @@ class Tester:
         )
         return processor.process_data(
             file_list_path=self.local_file_list,
-            branches = ["event"]
+            branches = ["event"],
+            use_processes=True
         )
 
+    def _basic_remote_multiprocess(self):
+        processor = Processor(
+            verbosity=self.verbosity,
+            use_remote=True
+        )
+        return processor.process_data(
+            file_list_path=self.remote_file_list,
+            branches = ["event"],
+            use_processes=True
+        )
+        
     def _advanced_multithread(self):
         
         class MyProcessor(Skeleton):
@@ -319,11 +342,24 @@ class Tester:
                 super().__init__()
                 processor_self.file_list_path=self.local_file_list
             def process_file(self, file_name):
-                return file_name # No need for anything interesting here
+                return file_name 
 
         my_processor = MyProcessor()
         return my_processor.execute()
-        
+
+    def _advanced_multiprocess(self):
+    
+        class MyProcessor(Skeleton):
+            def __init__(processor_self):
+                super().__init__()
+                processor_self.use_processes=True
+                processor_self.file_list_path=self.local_file_list
+            def process_file(self, file_name):
+                return file_name 
+    
+        my_processor = MyProcessor()
+        return my_processor.execute()
+            
     def _test_processor(
         self, 
         local_process_file=True,
@@ -357,11 +393,15 @@ class Tester:
 
         if basic_multifile:
             self._safe_test("pyprocess:Processor:process_data (basic multithread)", self._basic_multithread)
+            self._safe_test("pyprocess:Processor:process_data (basic remote multithread)", self._basic_remote_multithread)
             # self._safe_test("pyprocess:Processor:process_data (basic bad multithread)", self._basic_bad_multithread)
             self._safe_test("pyprocess:Processor:process_data (basic multiprocess)", self._basic_multiprocess)
+            self._safe_test("pyprocess:Processor:process_data (basic remote multiprocess)", self._basic_remote_multiprocess)
+            # self._safe_test("pyprocess:Processor:process_data (basic remote multithread)", self._basic_remote_multiprocess)
 
         if advanced_multifile:
             self._safe_test("pyprocess:Skeleton (advanced multithread)", self._advanced_multithread)
+            self._safe_test("pyprocess:Skeleton (advanced multiprocess)", self._advanced_multiprocess)
 
     ###### pyselect ######
 
