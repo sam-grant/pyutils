@@ -5,19 +5,28 @@ from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_compl
 import awkward as ak
 import inspect
 import tqdm
-import gc
-from . import _env_manager # Environment manager
-from .pyread import Reader # For reading files
-from .pyimport import Importer # For importing branches
-from .pylogger import Logger # Messaging/logging
+import functools 
 
-# TODO: implement failed file handling, accumalation across threads and dask.awkward
+from . import _env_manager
+from .pyimport import Importer
+from .pylogger import Logger
 
+def _worker_func(file_name, branches, tree_path, use_remote, location, schema, verbosity):
+    """Module-level worker function for processing files"""
+    importer = Importer(
+        file_name=file_name,
+        branches=branches,
+        tree_path=tree_path,
+        use_remote=use_remote,
+        location=location,
+        schema=schema,
+        verbosity=verbosity
+    )
+    return importer.import_branches()
+    
 class Processor:
     """Interface for processing files or datasets"""
     
-    # def __init__(self, verbosity=1):
-
     def __init__(self, tree_path="EventNtuple/ntuple", use_remote=False, location="tape", schema="root", verbosity=1):
         """Initialise the processor
 
@@ -63,11 +72,11 @@ class Processor:
 
         # Long help message for warnings about file lists of length zero 
         help_message = f"""
-        This issue is usually caused by one of the following:
-            1. You don't have a token (trying running getToken)
-            2. The files are not staged
-            3. The file location is incorrect (currently location={self.location})
-            4. use_remote is not True, if working with /pnfs on EAF (currently remote={self.use_remote})
+        Common causes:
+            - Authetification issues (trying running getToken)
+            - The files are not staged
+            - Incorrect file location is incorrect (currently location={self.location})
+            - use_remote is not True, if not working with local files (currently remote={self.use_remote})
         """
         
         # Check if a file list path was provided
@@ -124,36 +133,12 @@ class Processor:
             self.logger.log("Error: Either 'defname' or 'file_list_path' must be provide", "error")
             return []  
 
-    def _preprocess_test(self, file_list):
-        """Read the first file to detect issues before processing
-
-        Workers are silenced, so this can be useful
-        """
-        if not file_list:
-            return
-
-        self.logger.log("Running preprocess test", "info")
-        
-        # Sample first file
-        sample_file_name = file_list[0]
-
-        # Start a reader 
-        reader = Reader(use_remote=self.use_remote, location=self.location, schema=self.schema, verbosity=self.verbosity)
-
-        # Read the file
-        try:
-            sample_file = reader.read_file(sample_file_name)
-            return True
-        except Exception as e:
-            self.logger.log(f"Exception during preprocessing {e}", "error")
-            return False
-
-    def _process_files_parallel(self, file_list, process_func, max_workers=None, use_processes=False):
+    def _process_files_parallel(self, file_list, worker_func, max_workers=None, use_processes=False):
         """Internal function to parallelise file operations with given a process function
         
         Args:
             file_list: List of files to process
-            process_func: Function to call for each file (must accept file name as first argument)
+            worker_func: Function to call for each file (must accept file name as first argument)
             max_workers: Maximum number of worker threads
             use_processes (bool, optional): Use process pool rather than thread pool 
         Returns:
@@ -163,17 +148,10 @@ class Processor:
         if not file_list:
             self.logger.log("Error: Empty file list provided", "error")
             return None
-
-        # Run test
-        if self._preprocess_test(file_list):
-            self.logger.log("Preprocess test passed", "success")
-        else:
-            self.logger.log("Preprocess test failed", "error")
-            return None            
     
         if max_workers is None:
             # Return a sensible default for max threads
-            max_workers = min(len(file_list), 2*os.cpu_count() or 4) # FIXME: sensible for threads, not processes
+            max_workers = min(len(file_list), os.cpu_count()) # FIXME: sensible for threads, not processes
 
         ExecutorClass = ProcessPoolExecutor if use_processes else ThreadPoolExecutor
         executor_type = "processes" if use_processes else "threads"
@@ -203,7 +181,7 @@ class Processor:
             # Start thread pool executor
             with ExecutorClass(max_workers=max_workers) as executor:
                 # Create futures for each file processing task
-                futures = {executor.submit(process_func, file_name): file_name for file_name in file_list}
+                futures = {executor.submit(worker_func, file_name): file_name for file_name in file_list}
                 
                 # Process results as they complete
                 for future in as_completed(futures):
@@ -234,15 +212,11 @@ class Processor:
                             "successful": completed_files, 
                             "failed": failed_files 
                         })
-                
-                # Clean up
-                del futures
-                gc.collect()
         
         # Return the results
         return results
             
-    def process_data(self, file_name=None, file_list_path=None, defname=None, branches=None, max_workers=None, custom_process_func=None, use_processes=False):
+    def process_data(self, file_name=None, file_list_path=None, defname=None, branches=None, max_workers=None, custom_worker_func=None, use_processes=False):
         """Process the data 
         
         Args:
@@ -251,12 +225,12 @@ class Processor:
             file_list_path: Path to file list 
             branches: Flat list or grouped dict of branches to import
             max_workers: Maximum number of parallel workers
-            custom_process_func: Optional custom processing function for each file 
+            custom_worker_func: Optional custom processing function for each file 
             use_processes: Whether to use processes rather than threads
             
         Returns:
-            - If custom_process_func is None: a concatenated awkward array with imported data from all files
-            - If custom_process_func is not None: a list of outputs from the custom process
+            - If custom_worker_func is None: a concatenated awkward array with imported data from all files
+            - If custom_worker_func is not None: a list of outputs from the custom process
         """
 
         # Check that we have one type of file argument 
@@ -265,19 +239,18 @@ class Processor:
             self.logger.log(f"Please provide exactly one of 'file_name', 'file_list_path', or defname'", "error")
             return None
 
-        # Validate custom_process_func if provided
-        if custom_process_func is not None:
+        # Validate custom_worker_func if provided
+        if custom_worker_func is not None:
             # Check if it's callable
-            if not callable(custom_process_func):
-                self.logger.log(f"custom_process_func is not callable", "error")
+            if not callable(custom_worker_func):
+                self.logger.log(f"custom_worker_func is not callable", "error")
                 return None
                 
             # Check function signature
-            sig = inspect.signature(custom_process_func)
+            sig = inspect.signature(custom_worker_func)
             if len(sig.parameters) != 1:
-                self.logger.log(f"custom_process_func must take exactly one argument (file_name)", "error")
+                self.logger.log(f"custom_worker_func must take exactly one argument (file_name)", "error")
                 return None
-
         # Verbosity for worker threads is the same as Processor 
         worker_verbosity = self.verbosity 
         
@@ -286,26 +259,22 @@ class Processor:
             worker_verbosity = 0
             
         # Set up process function
-        if custom_process_func is None: # Then use the default function
-            def process_func(file_name):
-                # Create a unique importer instance for this thread with same config
-                importer = Importer(
-                    file_name=file_name,
-                    branches=branches,
-                    tree_path=self.tree_path,
-                    use_remote=self.use_remote,
-                    location=self.location,
-                    schema=self.schema,
-                    verbosity=worker_verbosity
-                )
-                # Return result  
-                return importer.import_branches()
+        if custom_worker_func is None: # Then use the default function
+            worker_func = functools.partial(
+                _worker_func,  # Module-level function
+                branches=branches,
+                tree_path=self.tree_path,
+                use_remote=self.use_remote,
+                location=self.location,
+                schema=self.schema,
+                verbosity=worker_verbosity
+            )
         else: # Use the custom process function  
-            process_func = custom_process_func
+            worker_func = custom_worker_func
 
         # Handle the single file case
         if file_name: 
-            result = process_func(file_name) # Run the process
+            result = worker_func(file_name) # Run the process
             self.logger.log(f"Completed process on {file_name}", "success")
             return result 
 
@@ -315,7 +284,7 @@ class Processor:
         # Get list of results 
         results = self._process_files_parallel(
             file_list,
-            process_func,
+            worker_func,
             max_workers=max_workers,
             use_processes=use_processes
         )
@@ -323,7 +292,7 @@ class Processor:
         if len(results) == 0:
             self.logger.log(f"Results list has length zero", "warning")
 
-        if custom_process_func is None:
+        if custom_worker_func is None:
             # Concatenate the arrays
             results = ak.concatenate(results)
             if results is not None:
@@ -382,6 +351,7 @@ class Skeleton:
         self.max_workers = None     # Number of parallel workers (None=auto)
         self.use_processes = False  # Whether to use processes rather than threads 
         self.verbosity = verbosity
+        self.worker_verbosity = 0   # Verbosity of worker function
         # Analysis-specific configuration
         # Add your own parameters here!
         # self.param1 = value1
@@ -415,7 +385,7 @@ class Skeleton:
                 use_remote=self.use_remote,
                 location=self.location,
                 schema=self.schema,
-                verbosity=0  # Reduce verbosity for worker threads
+                verbosity=self.worker_verbosity 
             )
             
             # Import the data
@@ -473,7 +443,7 @@ class Skeleton:
             defname=self.defname,
             branches=self.branches,
             max_workers=self.max_workers,
-            custom_process_func=self.process_file,
+            custom_worker_func=self.process_file,
             use_processes=self.use_processes 
         )
 

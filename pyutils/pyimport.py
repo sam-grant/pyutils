@@ -9,7 +9,7 @@ class Importer:
     Intended to used via by the pyprocess Processor class
     """
     
-    def __init__(self, file_name, branches, tree_path="EventNtuple/ntuple", use_remote=False, location="tape", schema="root", verbosity=1):
+    def __init__(self, file_name, branches, tree_path="EventNtuple/ntuple", use_remote=False, location="disk", schema="root", verbosity=1):
         """Initialise the importer
         
         Args:
