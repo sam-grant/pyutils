@@ -866,18 +866,6 @@ which should return
 /path/to/dev/area/pyutils/pyutils/__init__.py 
 ```
 
-To confirm that the package is registered:
-
-```bash
-pip list | grep pyutils
-```
-
-which should return
-
-```
-pyutils <version> /path/to/dev/area/pyutils # pip command
-```
-
 Your changes will be automatically be applied to the `pyutils` installed in your environment, with no need to rerun the `pip` command, and you can import modules and classes using the same syntax as normal.
 ## Contact
 
