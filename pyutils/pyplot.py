@@ -366,6 +366,9 @@ class Plot:
                     
                 # Set fill parameter
                 fill = style.get("fill", histtype != "step")
+
+                # Set linestyle 
+                linestyle = style.get("linestyle", "-")
                 
                 # Plot the histogram
                 hist_kwargs = {
@@ -377,7 +380,8 @@ class Plot:
                     "label": label,
                     "weights": weight,
                     "alpha": alpha,
-                    "linewidth": linewidth
+                    "linewidth": linewidth,
+                    "linestyle": linestyle
                 }
                 
                 # Only add color if explicitly specified
@@ -558,6 +562,208 @@ class Plot:
         if show:
             plt.show()
 
+    def plot_2D_overlay(
+        self,
+        x1, y1, x2, y2,
+        weights1=None, weights2=None,
+        nbins_x=100,
+        xmin=-1.0,
+        xmax=1.0,
+        nbins_y=100,
+        ymin=-1.0,
+        ymax=1.0,
+        title=None,
+        xlabel=None,
+        ylabel=None,
+        zlabel=None,
+        out_path=None,
+        cmap1="Blues",
+        cmap2="Reds", 
+        alpha=0.7,
+        dpi=300,
+        log_x=False,
+        log_y=False,
+        log_z=False,
+        show_cbar=False,
+        leg_pos="best",
+        ax=None,
+        show=True,
+        labels=None
+        ):
+    
+        """
+        Plot two overlaid 2D histograms from two pairs of arrays with different colourmaps.
+        
+        Args:
+            x1, y1 (np.ndarray): Arrays for first dataset
+            x2, y2 (np.ndarray): Arrays for second dataset  
+            weights1, weights2 (np.ndarray, optional): Optional weights for each dataset
+            nbins_x (int): Number of bins in x. Defaults to 100
+            xmin (float): Minimum x value. Defaults to -1.0
+            xmax (float): Maximum x value. Defaults to 1.0
+            nbins_y (int): Number of bins in y. Defaults to 100
+            ymin (float): Minimum y value. Defaults to -1.0
+            ymax (float): Maximum y value. Defaults to 1.0
+            title (str, optional): Plot title
+            xlabel (str, optional): X-axis label
+            ylabel (str, optional): Y-axis label
+            zlabel (str, optional): Colourbar label
+            out_path (str, optional): Path to save the plot
+            cmap1 (str): Matplotlib colourmap for first dataset. Defaults to "Blues"
+            cmap2 (str): Matplotlib colourmap for second dataset. Defaults to "Reds"
+            alpha (float): Transparency level. Defaults to 0.7
+            dpi (int): DPI for saved plot. Defaults to 300
+            log_x (bool): Use log scale for x-axis
+            log_y (bool): Use log scale for y-axis
+            log_z (bool): Use log scale for colour values
+            show_cbar (bool): Whether to show colourbar. Defaults to False (not recommended for overlays)
+            leg_pos (str): Legend position. Defaults to "best"
+            ax (plt.Axes, optional): External custom axes.
+            show (bool): Display the plot. Defaults to True
+            labels (list, optional): Labels for legend ['Dataset1', 'Dataset2']
+            
+        Raises:
+            ValueError: If input arrays are empty or different lengths
+        """
+        
+        # Process first dataset
+        x1 = ak.to_numpy(x1)
+        y1 = ak.to_numpy(y1)
+        
+        # Filter out empty entries for dataset 1
+        valid_indices1 = [i for i in range(len(x1)) if np.any(x1[i]) and np.any(y1[i])]
+        x1 = [x1[i] for i in valid_indices1]
+        y1 = [y1[i] for i in valid_indices1]
+    
+        if weights1 is not None:
+            weights1 = [weights1[i] for i in valid_indices1]
+    
+        # Process second dataset
+        x2 = ak.to_numpy(x2)
+        y2 = ak.to_numpy(y2)
+        
+        # Filter out empty entries for dataset 2
+        valid_indices2 = [i for i in range(len(x2)) if np.any(x2[i]) and np.any(y2[i])]
+        x2 = [x2[i] for i in valid_indices2]
+        y2 = [y2[i] for i in valid_indices2]
+    
+        if weights2 is not None:
+            weights2 = [weights2[i] for i in valid_indices2]
+    
+        # Validate inputs
+        if len(x1) == 0 or len(y1) == 0:
+            self.logger.log("First dataset arrays are empty", "error")
+            return None
+        if len(x1) != len(y1):
+            self.logger.log("First dataset arrays have different lengths", "error")
+            return None
+        if len(x2) == 0 or len(y2) == 0:
+            self.logger.log("Second dataset arrays are empty", "error")
+            return None
+        if len(x2) != len(y2):
+            self.logger.log("Second dataset arrays have different lengths", "error")
+            return None
+        
+        # Create or use provided axes
+        new_fig = False
+        if ax is None:
+            fig, ax = plt.subplots()
+            new_fig = True
+        
+        # Create 2D histograms
+        hist1, _, _ = np.histogram2d(
+            x1, y1,
+            bins=[nbins_x, nbins_y],
+            range=[[xmin, xmax], [ymin, ymax]],
+            weights=weights1
+        )
+        
+        hist2, _, _ = np.histogram2d(
+            x2, y2,
+            bins=[nbins_x, nbins_y],
+            range=[[xmin, xmax], [ymin, ymax]],
+            weights=weights2
+        )
+    
+        # Set up normalisation
+        # vmax = max(np.max(hist1), np.max(hist2))
+        # norm = colors.Normalize(vmin=0, vmax=vmax)
+        # norm2 = colors.Normalize(vmin=0, vmax=vmax)
+    
+        if log_z:
+            norm = colors.LogNorm(vmin=max(1, np.min(hist1[hist1>0])), vmax=np.max(hist1))
+            norm2 = colors.LogNorm(vmin=max(1, np.min(hist2[hist2>0])), vmax=np.max(hist2))
+        else:
+            norm1 = colors.Normalize(vmin=0, vmax=np.max(hist1))
+            norm2 = colors.Normalize(vmin=0, vmax=np.max(hist2))
+    
+    
+        
+        # Plot the first 2D histogram
+        im1 = ax.imshow(
+            hist1.T,
+            cmap=cmap1,
+            extent=[xmin, xmax, ymin, ymax],
+            aspect="auto",
+            origin="lower",
+            norm=norm1,
+            alpha=1.0 # otherwise it will be washed out
+        )
+        
+        # Overlay the second 2D histogram
+        im2 = ax.imshow(
+            hist2.T,
+            cmap=cmap2,
+            extent=[xmin, xmax, ymin, ymax],
+            aspect="auto",
+            origin="lower", 
+            norm=norm2,
+            alpha=alpha
+        )
+    
+        # Configure axes scales
+        if log_x:
+            ax.set_xscale("log")
+        if log_y:
+            ax.set_yscale("log")
+    
+        # Add colourbar (optional, usually not recommended for overlays)
+        cbar = None
+        if show_cbar:
+            # Show colourbar for first dataset only
+            cbar = plt.colorbar(im1, ax=ax)
+            cbar.set_label(zlabel)
+    
+        # Set labels
+        ax.set_title(title)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        
+        # Add legend if labels provided
+        if labels and len(labels) >= 2:
+            from matplotlib.patches import Patch
+            legend_elements = [
+                Patch(facecolor=plt.cm.get_cmap(cmap1)(0.7), alpha=alpha, label=labels[0]),
+                Patch(facecolor=plt.cm.get_cmap(cmap2)(0.7), alpha=alpha, label=labels[1])
+            ]
+            ax.legend(handles=legend_elements, loc=leg_pos)
+    
+        # Scientific notation
+        self._scientific_notation(ax, cbar=cbar)
+    
+        if new_fig:
+            # Draw
+            plt.tight_layout()
+    
+        # Save if path provided
+        if out_path:
+            plt.savefig(out_path, dpi=dpi, bbox_inches="tight")
+            logger.log(f"Wrote:\n\t{out_path}", "success")
+    
+        # Show if requested
+        if show:
+            plt.show()
+            
     def plot_graph(
         self,
         x,
