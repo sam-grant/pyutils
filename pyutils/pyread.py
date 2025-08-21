@@ -78,7 +78,7 @@ class Reader:
             shell=True,
             universal_newlines=True, 
             stderr=subprocess.DEVNULL,
-            timeout=10
+            timeout=30
         ).strip()
         
         self.logger.log(f"Created file path: {this_file_path}", "info")
